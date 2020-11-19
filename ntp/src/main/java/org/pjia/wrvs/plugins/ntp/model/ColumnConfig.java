@@ -3,6 +3,10 @@ package org.pjia.wrvs.plugins.ntp.model;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.collections4.CollectionUtils;
+
+import lombok.Getter;
+
 /**
  * 列配置模型
  * 
@@ -11,6 +15,7 @@ import java.util.Optional;
  */
 public class ColumnConfig {
 	
+	@Getter
 	private List<Column> columns;
 
 	public ColumnConfig(List<Column> result) {
@@ -27,10 +32,23 @@ public class ColumnConfig {
 		Optional<Column> optional = columns.stream().filter(col -> name.equals(col.getName())).findFirst();
 		return optional.isPresent()? optional.get(): null;
 	}
-	
+	/**
+	 * 获取指定号位的列
+	 * 
+	 * @param index
+	 * @return
+	 */
 	public Column getColumnByIndex(int index) {
 		Optional<Column> optional = columns.stream().filter(col -> index == col.getIndex()).findFirst();
 		return optional.isPresent()? optional.get(): null;
 	}
-
+	/**
+	 * 获取最后一列
+	 * 
+	 * @return
+	 */
+	public Column getEndColumn() {
+		if(CollectionUtils.isEmpty(columns)) { return null; }
+		return columns.get(columns.size() - 1);
+	}
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
+import org.pjia.wrvs.plugins.ntp.model.DataSet;
 import org.pjia.wrvs.plugins.ntp.model.Message;
 import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
@@ -37,10 +38,11 @@ public class SegmentUpdater {
 	 * 更新
 	 * 
 	 * @param localClient
-	 * @param segment
+	 * @param dataSet
 	 */
-	public void update(Segment segment) {
-		List<Message> messages = segment.getMessages();
+	public void update(DataSet dataSet) {
+		List<Message> messages = dataSet.getMessages();
+		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
 			// 返回 message heading item id
 			String mid = saveMessage(message, segment);
@@ -52,15 +54,13 @@ public class SegmentUpdater {
 				signal.setIssueId(sid);
 			}
 		}
-		doDeleteAction(segment);
+		doDeleteAction(dataSet);
 	}
 
-	private void doDeleteAction(Segment segment) {
-		List<Node> nodes = segment.getNodes();
+	private void doDeleteAction(DataSet dataSet) {
+		List<Node> nodes = dataSet.getDeletingNodes();
 		for(Node node :nodes) {
-			if(node.isDelete()) {
-				deleteNode(node);
-			}
+			deleteNode(node);
 		}
 	}
 

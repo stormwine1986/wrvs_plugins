@@ -1,19 +1,36 @@
 package org.pjia.wrvs.plugins.ntp.internal;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.pjia.wrvs.plugins.client.WRVSLocalClient;
 import org.pjia.wrvs.plugins.ntp.model.Column;
 import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
+import org.pjia.wrvs.plugins.ntp.model.DataSet;
 import org.pjia.wrvs.plugins.ntp.model.Message;
+import org.pjia.wrvs.plugins.ntp.model.Node;
+import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
 import org.pjia.wrvs.plugins.ntp.model.Structure;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mks.api.Command;
+import com.mks.api.Option;
+import com.mks.api.response.APIException;
+import com.mks.api.response.Field;
+import com.mks.api.response.Response;
+import com.mks.api.response.WorkItem;
 
 /**
  * Message 对象构造者
@@ -24,12 +41,11 @@ import com.google.gson.JsonObject;
 public class MessageBuilder {
 
 	/**
-	 * 构造
+	 * 从 Structure 构造 DataSet
 	 * 
-	 * @param messages messages 结构
-	 * @param columnConfig 列配置
+	 * @param structure structure 结构
 	 */
-	public static List<Message> build(Structure structure) {
+	public static DataSet build(Structure structure) {
 		List<Message> messages = structure.getMessages();
 		ColumnConfig config = structure.getConfig();
 		for(Message message :messages) {
@@ -39,7 +55,7 @@ public class MessageBuilder {
 				build(signal, config);
 			}
 		}
-		return structure.getMessages();
+		return new DataSet(structure.getMessages());
 	}
 	
 	private static void build(Message message, ColumnConfig columns) {
@@ -142,5 +158,148 @@ public class MessageBuilder {
 		}
 		Cell cell = row.getCell(column.getIndex());
 		return getStringValue(cell);
+	}
+	
+	/**
+	 * 从 Segment 构建 DataSet
+	 * 
+	 * @param segment segment
+	 * @return DataSet
+	 * @throws APIException 
+	 */
+	public static DataSet build(Segment segment, WRVSLocalClient localClient) {
+		// 选择所有非 heading 条目
+		List<Node> nodes = segment.getNodes().stream()
+			.filter(node -> !"Heading".equals(node.getCategroty()))
+			.collect(Collectors.toList());
+		List<Signal> signals = new ArrayList<>();
+		for(Node node :nodes) {
+			Signal signal = build(node, localClient);
+			if(signal != null) {
+				signals.add(signal);				
+			}
+		}
+		
+		DataSet dataSet = buildDataSet(signals);
+		dataSet.apply(segment);
+		return dataSet;
+	}
+
+	private static DataSet buildDataSet(List<Signal> signals) {
+		List<Message> messages = new ArrayList<>();
+		for(Signal signal :signals) {
+			// Group By message
+			Message message = signal.getMessage();
+			String messageName = message.getName();
+			Optional<Message> optional = messages.stream().filter(m -> messageName.equals(m.getName())).findFirst();
+			if(optional.isPresent()) {
+				optional.get().addSignal(signal);
+			} else {
+				messages.add(message);
+				message.addSignal(signal);
+			} 
+		}
+		return new DataSet(messages);
+	}
+
+	private static Signal build(Node node, WRVSLocalClient localClient) {
+		try {
+			Command cmd = new Command("im", "viewissue");
+			cmd.addOption(new Option("showRichContent"));
+			cmd.addSelection(node.getId());
+			Response response = localClient.execute(cmd);
+			WorkItem workItem = response.getWorkItem(node.getId());
+			// 组装 Signal 对象
+			String signalName = getFieldStringValue(workItem.getField("Signal Name"));
+			Signal signal = new Signal(signalName);
+			signal.setByteNumber(getFieldStringValue(workItem.getField("Byte Number")));
+			signal.setBitNumber(getFieldStringValue(workItem.getField("Bit Number")));
+			signal.setSignalLength((getFieldStringValue(workItem.getField("Signal Length"))));
+			signal.setStartBitNo((getFieldStringValue(workItem.getField("Start Bit No"))));
+			signal.setEventOfSignal((getFieldStringValue(workItem.getField("Event of signal"))));
+			signal.setSignalDescription((getFieldStringValue(workItem.getField("Signal Description"))));
+			signal.setSignalInitial((getFieldStringValue(workItem.getField("Signal Initial"))));
+			signal.setSignalInitialRemark((getFieldStringValue(workItem.getField("Signal Initial Remark"))));
+			signal.setInvalidValue((getFieldStringValue(workItem.getField("Invalid Value"))));
+			signal.setPhysicalRange((getFieldStringValue(workItem.getField("Physical Range"))));
+			signal.setPhysicalResolution((getFieldStringValue(workItem.getField("Physical Resolution"))));
+			signal.setExternalConditions((getFieldStringValue(workItem.getField("External Conditions"))));
+			signal.setInvalidValueRemark((getFieldStringValue(workItem.getField("Invalid Value Remark"))));
+			buildNormal(signal, workItem.getField("Normal"));
+			signal.setRsInfo(buildRSInfo(workItem));
+			// 组装 message 对象
+			String messageName = getFieldStringValue(workItem.getField("Message Name"));
+			Message message = new Message(messageName);
+			signal.setMessage(message);
+			message.setId(getFieldStringValue(workItem.getField("Message ID")));
+			message.setCycleTime(getFieldStringValue(workItem.getField("Cycle time")));
+			message.setSendType(getFieldStringValue(workItem.getField("Send Type")));
+			message.setMessageLength(getFieldStringValue(workItem.getField("Message Length")));
+			
+			return signal;
+		}catch (APIException e) {
+			System.out.println(e.getResponse().toString());
+			return null;
+		}
+	}
+
+	private static JsonObject buildRSInfo(WorkItem workItem) {
+		JsonObject object = new JsonObject();
+		Field signalReceiver = workItem.getField("Signal Receiver");
+		Field signalSender = workItem.getField("Signal Sender");
+		List<String> r = getPickValue(signalReceiver);
+		List<String> s = getPickValue(signalSender);
+		r.stream().forEach(e -> {object.addProperty(e, "r");});
+		s.stream().forEach(e -> {object.addProperty(e, "s");});
+		return object;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> getPickValue(Field pickField) {
+		List<String> picks = new ArrayList<>(10);
+		if(pickField != null) {
+			String dataType = pickField.getDataType();
+			if("com.mks.api.response.ValueList".equals(dataType)) {
+				picks.addAll(pickField.getList());
+			} else if("java.lang.String".equals(dataType)) {
+				picks.add(pickField.getString());
+			}
+		}
+		return picks;
+	}
+
+	private static void buildNormal(Signal signal, Field field) {
+		if(field != null) {
+			String content = field.getValueAsString();
+			if(content.indexOf("</table>") > -1) {
+				Document document = Jsoup.parse(content.replace("<!-- MKS HTML -->", ""));
+				JsonArray matrix = htmlTableToMatrix(document);
+				signal.setBitMatrix(matrix);
+			} else {
+				signal.setNormal(content.replace("<!-- MKS HTML -->", "").replace("<p>", "").replace("</p>", ""));
+			}
+		}
+	}
+
+	private static JsonArray htmlTableToMatrix(Document document) {
+		Elements trs = document.getElementsByTag("tr");
+		JsonArray matrix = new JsonArray();
+		for(int i = 0; i < trs.size(); i++) {
+			Element tr = trs.get(i);
+			Elements tds = tr.getElementsByTag("td");
+			JsonArray line = new JsonArray();
+			for(int j = 0; j < tds.size(); j++) {
+				Element td = tds.get(j);
+				line.add(td.text().trim());
+			}
+			matrix.add(line);
+		}
+		return matrix;
+	}
+
+	private static String getFieldStringValue(Field field) {
+		if(field == null) return "";
+		if(field.getValueAsString() == null) return "";
+		return field.getValueAsString();
 	}
 }

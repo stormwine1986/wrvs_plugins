@@ -57,7 +57,7 @@ public class StructureBuilder {
     			message.addSignal(signal);
     		}
     		// 获取最后一个 signal 获取当前的 signal
-    		Signal signal = message.getLast();
+    		Signal signal = message.getLastestSignal();
     		signal.addRow(row);
     	}
 		return new Structure(result, config);

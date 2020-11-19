@@ -59,6 +59,7 @@ public class Message {
 
 	public void addSignal(Signal signal) {
 		signals.add(signal);
+		signal.setMessage(this);
 	}
 
 	/**
@@ -66,7 +67,7 @@ public class Message {
 	 * 
 	 * @return
 	 */
-	public Signal getLast() {
+	public Signal getLastestSignal() {
 		return signals.size() == 0? null: signals.get(signals.size() -1);
 	}
 	

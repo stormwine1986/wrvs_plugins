@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -21,6 +22,12 @@ import lombok.Data;
  */
 @Data
 public class Signal {
+	
+	/**
+	 * 所属的 message
+	 * 
+	 */
+	private Message message;
 	
 	private String issueId;
 	
@@ -199,5 +206,17 @@ public class Signal {
 			}
 		}
 		return value.toString();
+	}
+	
+	/**
+	 * 获取最后一行
+	 * 
+	 * @return
+	 */
+	public Row getLastestRow() {
+		if(CollectionUtils.isEmpty(rowScope)) {
+			return null;
+		}
+		return rowScope.get(rowScope.size() - 1);
 	}
 }
