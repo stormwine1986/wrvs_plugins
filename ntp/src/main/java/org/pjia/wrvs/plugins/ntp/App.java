@@ -1,5 +1,6 @@
 package org.pjia.wrvs.plugins.ntp;
 
+import org.pjia.wrvs.plugins.client.PluginApp;
 import org.pjia.wrvs.plugins.client.PluginContext;
 
 /**
@@ -8,14 +9,15 @@ import org.pjia.wrvs.plugins.client.PluginContext;
  * @author pjia
  *
  */
-public class App {
+public class App implements PluginApp {
 	
-    public static void main(String[] args) {
+	@Override
+    public void run(String[] args, PluginContext context) {
     	String appName = args[0];
     	if("import".equals(appName)) {
-    		ImportApp.main(args);
+    		ImportApp.run(args, context);
     	}else if("export".equals(appName)) {
-    		ExportApp.main(args);
+    		ExportApp.run(args, context);
     	}
     }
 }

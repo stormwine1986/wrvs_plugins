@@ -25,16 +25,14 @@ import lombok.extern.slf4j.Slf4j;
 public class ExportApp {
 	
 	private static WRVSLocalClient localClient;
-	private static String issueId = "36949";
-	
-	public static void main(String[] args) {
-		PluginContext context = new PluginContext();
+
+	public static void run(String[] args, PluginContext context) {
 		Workbook workbook = null;
 		FileOutputStream outputStream = null;
 		try {
-			localClient = new WRVSLocalClient();
+			localClient = new WRVSLocalClient(context);
 			// 读取文档条目结构
-			Segment segment = SegmentBuilder.build(localClient, issueId);
+			Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
 			// 读取所有非 Heading 条目的全部信息，构建 DataSet
 			DataSet dataSet = MessageBuilder.build(segment, localClient);
 			workbook = WorkbookBuilder.build(dataSet);

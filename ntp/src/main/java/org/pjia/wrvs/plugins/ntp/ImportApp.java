@@ -31,18 +31,22 @@ public class ImportApp {
 	
 	private static File file = new File("D:\\workspace\\wrvs.plugins\\ntp\\sample.xls");
 	private static WRVSLocalClient localClient;
-	private static String issueId = "36949";
-	
-	public static void main(String[] args) {
-		PluginContext context = new PluginContext();
+
+	/**
+	 * 主方法
+	 * 
+	 * @param args
+	 * @param context
+	 */
+	public static void run(String[] args, PluginContext context) {
 		Workbook workbook = null;
     	try (InputStream is = new FileInputStream(file)) {
     		workbook = new HSSFWorkbook(is);
     		Sheet sheet = workbook.getSheet("PT");
     		Structure structure = StructureBuilder.build(sheet);
     		DataSet dataSet = MessageBuilder.build(structure);
-    		localClient = new WRVSLocalClient();
-    		Segment segment = SegmentBuilder.build(localClient, issueId);
+    		localClient = new WRVSLocalClient(context);
+    		Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
     		dataSet.apply(segment);
     		SegmentUpdater.create(localClient).update(dataSet);
     	}catch (Exception e) {

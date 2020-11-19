@@ -67,10 +67,11 @@
   <build>
         <resources>  
           <resource>  
-              <directory>src/main/java/</directory>  
+              <directory>src/main/resources/</directory>  
               <filtering>true</filtering>  
               <includes>  
-                  <include>*.properties</include>  
+                  <include>*.properties</include>
+                  <include>META-INF/services/*</include>
               </includes>  
           </resource> 
         </resources>
@@ -100,7 +101,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.pjia.wrvs.plugins.client.PluginContext</mainClass>
+                                    <mainClass>org.pjia.wrvs.plugins.client.PluginMain</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
