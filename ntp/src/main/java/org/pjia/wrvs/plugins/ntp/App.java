@@ -1,5 +1,7 @@
 package org.pjia.wrvs.plugins.ntp;
 
+import org.pjia.wrvs.plugins.client.PluginContext;
+
 /**
  * App
  * 
