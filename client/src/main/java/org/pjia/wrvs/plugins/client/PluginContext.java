@@ -3,18 +3,16 @@ package org.pjia.wrvs.plugins.client;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Data
 public class PluginContext {
-	@Getter
+	
 	private String host;
-	@Getter
 	private String port;
-	@Getter
 	private String user;
-	@Getter
 	private List<String> selectedIds = new ArrayList<>();
 
 	/**

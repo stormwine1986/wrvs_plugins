@@ -15,12 +15,12 @@ public class WRVSLocalClient {
 	
 	private Session session;
 
-	public WRVSLocalClient() throws APIException {
+	public WRVSLocalClient(PluginContext context) throws APIException {
 		IntegrationPoint point = IntegrationPointFactory.getInstance().createLocalIntegrationPoint(APIVersion.API_4_16);
 		point.setAutoStartIntegrityClient(true);
 		session = point.getCommonSession();
-		session.setDefaultHostname("10.112.6.226");
-		session.setDefaultUsername("administrator");
+		session.setDefaultHostname(context.getHost());
+		session.setDefaultUsername(context.getUser());
 	}
 	
 	/**
