@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
+import org.pjia.wrvs.plugins.ntp.model.Identifiable;
 import org.pjia.wrvs.plugins.ntp.model.Message;
 import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
@@ -29,6 +30,7 @@ public class SegmentUpdater {
 	}
 	
 	private WRVSLocalClient localClient;
+	private DataSet dataSet;
 	
 	private SegmentUpdater(WRVSLocalClient localClient) {
 		this.localClient = localClient;
@@ -41,6 +43,7 @@ public class SegmentUpdater {
 	 * @param dataSet
 	 */
 	public void update(DataSet dataSet) {
+		this.dataSet = dataSet; 
 		List<Message> messages = dataSet.getMessages();
 		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
@@ -91,6 +94,11 @@ public class SegmentUpdater {
 				command.setCommandName("createcontent");
 				command.addOption(new Option("type", "Network Communication"));
 				command.addOption(new Option("parentID", message.getIssueId()));
+				Identifiable item = dataSet.getPrev(signal);
+				if(item != null) {
+					// 设置插入顺序
+					command.addOption(new Option("insertLocation", "after:" + item.getIssueId()));
+				}
 			}
 			command.addOption(new Option("field", FieldValue.create("Category", "Functional Requirement").toString()));
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
@@ -162,6 +170,11 @@ public class SegmentUpdater {
 				command.setCommandName("createcontent");
 				command.addOption(new Option("type", "Network Communication"));
 				command.addOption(new Option("parentID", segment.getIssueId()));
+				Identifiable item = dataSet.getPrev(message);
+				if(item != null) {
+					// 设置插入顺序
+					command.addOption(new Option("insertLocation", "after:" + item.getIssueId()));
+				}
 			}
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
 			command.addOption(new Option("field", FieldValue.create("Category", "Heading").toString()));

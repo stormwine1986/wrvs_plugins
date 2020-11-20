@@ -14,7 +14,7 @@ import lombok.Data;
  *
  */
 @Data
-public class Message {
+public class Message implements Identifiable {
 	
 	private String issueId;
 	

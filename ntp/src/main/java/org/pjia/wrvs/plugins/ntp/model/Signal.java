@@ -21,7 +21,7 @@ import lombok.Data;
  *
  */
 @Data
-public class Signal {
+public class Signal implements Identifiable {
 	
 	/**
 	 * 所属的 message
