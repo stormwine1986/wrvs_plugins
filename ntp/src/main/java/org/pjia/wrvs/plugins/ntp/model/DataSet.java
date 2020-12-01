@@ -3,6 +3,7 @@ package org.pjia.wrvs.plugins.ntp.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -19,19 +20,12 @@ public class DataSet {
 	private List<Message> messages;
 	@Getter
 	private Segment segment;
-	// 扁平化的对象列表，用于计算前后关系
-	private List<Identifiable> flatedItems = new ArrayList<>(10);
+	@Getter
+	private Integer totalAmount;
 	
 	public DataSet(List<Message> messages) {
 		this.messages = messages;
-		// 构造扁平列表
-		for(Message message :messages) {
-			flatedItems.add(message);
-			List<Signal> signals = message.getSignals();
-			for(Signal signal :signals) {
-				flatedItems.add(signal);
-			}
-		}
+		totalAmount = getTotal();
 	}
 
 	/**
@@ -115,17 +109,12 @@ public class DataSet {
 		return result;
 	}
 
-	/**
-	 * 获取前一个对象
-	 * 
-	 * @param item
-	 * @return
-	 */
-	public Identifiable getPrev(Identifiable item) {
-		int indexOf = flatedItems.indexOf(item);
-		if(indexOf == -1) return null; // 不存在
-		if(indexOf == 0) return null; // 第一个
-		return flatedItems.get(indexOf - 1);
+	private Integer getTotal() {
+		final AtomicInteger result = new AtomicInteger(0);
+		messages.stream().forEach(message -> {
+			result.addAndGet(message.getSignals().size());
+		});
+		return result.addAndGet(messages.size());
 	}
 
 }

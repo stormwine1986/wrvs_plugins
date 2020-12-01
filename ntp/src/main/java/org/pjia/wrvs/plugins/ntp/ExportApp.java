@@ -1,17 +1,16 @@
 package org.pjia.wrvs.plugins.ntp;
 
+import java.awt.Desktop;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.util.Date;
 
-import org.apache.poi.ss.usermodel.Workbook;
+import javax.swing.JOptionPane;
+
 import org.pjia.wrvs.plugins.client.PluginContext;
-import org.pjia.wrvs.plugins.client.WRVSLocalClient;
-import org.pjia.wrvs.plugins.ntp.internal.MessageBuilder;
-import org.pjia.wrvs.plugins.ntp.internal.SegmentBuilder;
-import org.pjia.wrvs.plugins.ntp.internal.WorkbookBuilder;
-import org.pjia.wrvs.plugins.ntp.model.DataSet;
-import org.pjia.wrvs.plugins.ntp.model.Segment;
+import org.pjia.wrvs.plugins.ntp.ui.ExportThread;
+import org.pjia.wrvs.plugins.ntp.ui.Monitor;
+import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
+import org.pjia.wrvs.plugins.ntp.ui.TemplateSelector;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,38 +22,31 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class ExportApp {
-	
-	private static WRVSLocalClient localClient;
 
 	public static void run(String[] args, PluginContext context) {
-		Workbook workbook = null;
-		FileOutputStream outputStream = null;
+		// 显示模板选择界面
+		TemplateSelector selector = new TemplateSelector();
+		String selectedItem = selector.getSelectedItem();
+		System.out.println("selectedItem = " + selectedItem);
+		selector.dispose();
+		// 显示 Monitor
+		Monitor monitor = new Monitor();
+		ProgressEvent event = new ProgressEvent();
+		event.updateEvent("导出程序即将开始 ...");
+		// 启动导出线程
 		try {
-			localClient = new WRVSLocalClient(context);
-			// 读取文档条目结构
-			Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
-			// 读取所有非 Heading 条目的全部信息，构建 DataSet
-			DataSet dataSet = MessageBuilder.build(segment, localClient);
-			workbook = WorkbookBuilder.build(dataSet);
-			outputStream = new FileOutputStream(new File("D:\\workspace\\wrvs.plugins\\ntp\\output.xls"));
-			workbook.write(outputStream);
-			outputStream.flush();
+			File tempfile = File.createTempFile("TEMP" + new Date().getTime(), ".xls");
+			ExportThread thread = new ExportThread(event, context, tempfile);
+			thread.start();
+			// 阻塞直到导出结束
+			monitor.watch(event);
+			Desktop.getDesktop().open(tempfile);
+			monitor.dispose();
 		} catch (Exception e) {
-			log.error("", e);
-		} finally {
-			if(localClient != null) { localClient.release(); }
-			if(workbook != null) {  
-				try {
-					workbook.close();
-				} catch (IOException e) {
-				} 
-			}
-			if(outputStream != null) {
-				try {
-					outputStream.close();
-				} catch (IOException e) {
-				}
-			}
+			e.printStackTrace();
+			monitor.dispose();
+			// 异常提示
+			JOptionPane.showMessageDialog(null, e.toString());
 		}
 	}
 }

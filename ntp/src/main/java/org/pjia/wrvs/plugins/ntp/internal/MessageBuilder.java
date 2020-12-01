@@ -92,7 +92,10 @@ public class MessageBuilder {
 	
 	private static void buildRSInfo(Signal signal, ColumnConfig columns) {
 		JsonObject jsonObject = new JsonObject();
-		int startIndex = columns.getColumnByName("Invalid Value Remark").getIndex() + 1; // 信息区块开始的位置
+		// HQ 有 Invalid Value Remark 列，BT 只有 Invalid Value 列，这里适配了两种情况
+		Column base = (columns.getColumnByName("Invalid Value Remark") == null? 
+				columns.getColumnByName("Invalid Value"): columns.getColumnByName("Invalid Value Remark"));
+		int startIndex = base.getIndex() + 1; // 信息区块开始的位置
 		int endIndex = columns.getColumnByName("Physical Range").getIndex() - 1; // 信息区块结束的位置
 		Row row = signal.getRowScope().get(0);
 		for(int i = startIndex; i <= endIndex; i++) {

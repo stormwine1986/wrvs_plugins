@@ -219,4 +219,15 @@ public class Signal implements Identifiable {
 		}
 		return rowScope.get(rowScope.size() - 1);
 	}
+	
+	public void setByteNumber(String byteNumber) {
+		try {
+			int intValue = Double.valueOf(byteNumber).intValue();
+			// 浮点数转整数
+			this.byteNumber = String.valueOf(intValue);			
+		}catch (NumberFormatException e) {
+			// 范围记号
+			this.byteNumber = byteNumber;			
+		}
+	}
 }

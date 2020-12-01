@@ -1,15 +1,16 @@
 package org.pjia.wrvs.plugins.ntp.internal;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
-import org.pjia.wrvs.plugins.ntp.model.Identifiable;
 import org.pjia.wrvs.plugins.ntp.model.Message;
 import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
+import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import com.mks.api.Command;
 import com.mks.api.Option;
@@ -41,23 +42,30 @@ public class SegmentUpdater {
 	 * 
 	 * @param localClient
 	 * @param dataSet
+	 * @param event 
 	 */
-	public void update(DataSet dataSet) {
+	public void update(DataSet dataSet, ProgressEvent event) {
+		Integer totalAmount = dataSet.getTotalAmount();
+		AtomicInteger finished = new AtomicInteger(0);
+		event.updateProgress(finished.get(), totalAmount);
 		this.dataSet = dataSet; 
 		List<Message> messages = dataSet.getMessages();
 		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
 			// 返回 message heading item id
 			String mid = saveMessage(message, segment);
+			event.updateProgress(finished.addAndGet(1), totalAmount);
 			message.setIssueId(mid);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
 				// 返回 Signal item id
 				String sid = saveSignal(signal, message);
+				event.updateProgress(finished.addAndGet(1), totalAmount);
 				signal.setIssueId(sid);
 			}
 		}
 		doDeleteAction(dataSet);
+		event.updateEvent("写入完成");
 	}
 
 	private void doDeleteAction(DataSet dataSet) {
@@ -94,11 +102,7 @@ public class SegmentUpdater {
 				command.setCommandName("createcontent");
 				command.addOption(new Option("type", "Network Communication"));
 				command.addOption(new Option("parentID", message.getIssueId()));
-				Identifiable item = dataSet.getPrev(signal);
-				if(item != null) {
-					// 设置插入顺序
-					command.addOption(new Option("insertLocation", "after:" + item.getIssueId()));
-				}
+				setSingalInsertLocation(command, signal, message);
 			}
 			command.addOption(new Option("field", FieldValue.create("Category", "Functional Requirement").toString()));
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
@@ -155,6 +159,18 @@ public class SegmentUpdater {
 		}
 	}
 
+	private void setSingalInsertLocation(Command command, Signal signal, Message message) {
+		int indexOf = message.getSignals().indexOf(signal);
+		if(indexOf == 0) {
+			// 消息章节的第一个信号条目
+			command.addOption(new Option("insertLocation", "first"));
+		} else {
+			// 获取前一个信号
+			Signal pre = message.getSignals().get(indexOf - 1);
+			command.addOption(new Option("insertLocation", "after:" + pre.getIssueId()));
+		}
+	}
+
 	private String saveMessage(Message message, Segment segment) {
 		try {
 			String issueId = message.getIssueId();
@@ -170,11 +186,7 @@ public class SegmentUpdater {
 				command.setCommandName("createcontent");
 				command.addOption(new Option("type", "Network Communication"));
 				command.addOption(new Option("parentID", segment.getIssueId()));
-				Identifiable item = dataSet.getPrev(message);
-				if(item != null) {
-					// 设置插入顺序
-					command.addOption(new Option("insertLocation", "after:" + item.getIssueId()));
-				}
+				setMessageInsertLocation(command, message);
 			}
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
 			command.addOption(new Option("field", FieldValue.create("Category", "Heading").toString()));
@@ -196,6 +208,18 @@ public class SegmentUpdater {
 		}catch (APIException e) {
 			System.out.println(e.getResponse().toString());
 			return null;
+		}
+	}
+
+	private void setMessageInsertLocation(Command command, Message message) {
+		int indexOf = dataSet.getMessages().indexOf(message);
+		if(indexOf == 0) {
+			// 第一个消息章节
+			command.addOption(new Option("insertLocation", "first"));
+		} else {
+			// 获取前一个 message
+			Message pre = dataSet.getMessages().get(indexOf - 1);
+			command.addOption(new Option("insertLocation", "after:" + pre.getIssueId()));
 		}
 	}
 

@@ -1,10 +1,8 @@
 package org.pjia.wrvs.plugins.ntp.internal;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -31,8 +29,6 @@ public class StructureBuilder {
 	 */
 	public static Structure build(Sheet sheet) {
 		// 构建列配置
-//		Row endRow = getEndRow(sheet);
-//		Cell endCell = getEndCell(sheet);
 		Row headerRow = sheet.getRow(0);
 		ColumnConfig config = analysisColumns(headerRow);
 		// 构建 message - signal 结构
@@ -76,36 +72,6 @@ public class StructureBuilder {
 			return cell.getStringCellValue();
 		}
 	}
-	
-	private static boolean isEndRow(Row row) {
-    	Cell cell = row.getCell(0);
-    	BorderStyle borderBottom = cell.getCellStyle().getBorderBottom();
-    	Row nextRow = row.getSheet().getRow(row.getRowNum() + 1);
-    	return BorderStyle.THIN.equals(borderBottom) && nextRow == null;
-    }
-    
-//    private static Row getEndRow(Sheet sheet) {
-//    	Iterator<Row> rowIterator = sheet.rowIterator();
-//    	while(rowIterator.hasNext()) {
-//    		Row row = rowIterator.next();
-//    		if(isEndRow(row)) {
-//    			return row;
-//    		}
-//    	}
-//    	return null;
-//    }
-//    
-//    private static Cell getEndCell(Sheet sheet) {
-//    	Iterator<Cell> cellIterator = sheet.getRow(0).cellIterator();
-//    	while(cellIterator.hasNext()) {
-//    		Cell cell = cellIterator.next();
-//    		BorderStyle borderStyle = cell.getCellStyle().getBorderRight();
-//    		if(BorderStyle.THIN.equals(borderStyle)) {
-//    			return cell;
-//    		}
-//    	}
-//    	return null;
-//    }
     
     private static ColumnConfig analysisColumns(Row headerRow) {
     	List<Column> result = new ArrayList<>(10);

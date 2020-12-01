@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -19,6 +20,7 @@ import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
 import org.pjia.wrvs.plugins.ntp.model.Message;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
+import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 import org.pjia.wrvs.plugins.ntp.utils.StyleUtil;
 
 import com.google.gson.JsonArray;
@@ -34,24 +36,28 @@ public class WorkbookBuilder {
 	
 	/**
 	 * 从 DataSet 构造 Workbook
+	 * @param event 
 	 * 
 	 * @return
 	 */
-	public static Workbook build(DataSet dataSet) {
+	public static Workbook build(DataSet dataSet, ProgressEvent event) {
 		ColumnConfig config = createColumnConfig(dataSet);
+		event.updateEvent("正在装载模板 ... ");
 		Workbook wb = new HSSFWorkbook();
 		buildCover(wb);
-		buildHistory(wb);
+		event.updateEvent("生成 History ... ");
+		buildHistory(wb, dataSet);
 		Sheet ptSheet = initPTSheet(dataSet, wb);
-		buildPTSheet(dataSet, config, ptSheet);
+		buildPTSheet(dataSet, config, ptSheet, event);
 		renderPTSheet(ptSheet, dataSet, config);
 		buildNMMessageSheet(wb, config);
 		buildOthersSheet(wb);
 		return wb;
 	}
 
-	private static void buildHistory(Workbook wb) {
-		wb.createSheet("History");
+	private static void buildHistory(Workbook wb, DataSet dataSet) {
+		Sheet sheet = wb.createSheet("History");
+		HistoryBuilder.create().build(dataSet.getSegment().getHistory(), sheet);
 	}
 
 	private static void buildCover(Workbook wb) {
@@ -85,6 +91,9 @@ public class WorkbookBuilder {
 		StyleUtil.applyHeaderStyle(sheet.getRow(0), config);
 		// 冻结首行
 		sheet.createFreezePane( 0, 1, 0, 1 );
+		// 激活 PT Sheet
+		Workbook workbook = sheet.getWorkbook();
+		workbook.setActiveSheet(workbook.getSheetIndex(sheet));
 		/**
 		List<Message> messages = dataSet.getMessages();
 		for(Message message :messages) {
@@ -99,7 +108,10 @@ public class WorkbookBuilder {
 		**/
 	}
 
-	private static void buildPTSheet(DataSet dataSet, ColumnConfig config, Sheet ptSheet) {
+	private static void buildPTSheet(DataSet dataSet, ColumnConfig config, Sheet ptSheet, ProgressEvent event) {
+		Integer totalAmount = dataSet.getTotalAmount();
+		AtomicInteger finished = new AtomicInteger(0);
+		event.updateProgress(finished.get(), totalAmount);
 		buildHeader(ptSheet, config);
 		List<Message> messages = dataSet.getMessages();
 		for(Message message :messages) {
@@ -109,10 +121,12 @@ public class WorkbookBuilder {
 			setValue(message.getRow(), config.getColumnByName("Cycle time [ms]"), message.getCycleTime());
 			setValue(message.getRow(), config.getColumnByName("Send Type"), message.getSendType());
 			setValue(message.getRow(), config.getColumnByName("Message Length [Byte]"), message.getMessageLength());
+			event.updateProgress(finished.addAndGet(1), totalAmount);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
 				// signal 数据
 				buildSignal(signal, config);
+				event.updateProgress(finished.addAndGet(1), totalAmount);
 			}
 		}
 		

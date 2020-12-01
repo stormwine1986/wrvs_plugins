@@ -1,22 +1,14 @@
 package org.pjia.wrvs.plugins.ntp;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import javax.swing.JOptionPane;
+
 import org.pjia.wrvs.plugins.client.PluginContext;
-import org.pjia.wrvs.plugins.client.WRVSLocalClient;
-import org.pjia.wrvs.plugins.ntp.internal.MessageBuilder;
-import org.pjia.wrvs.plugins.ntp.internal.SegmentBuilder;
-import org.pjia.wrvs.plugins.ntp.internal.SegmentUpdater;
-import org.pjia.wrvs.plugins.ntp.internal.StructureBuilder;
-import org.pjia.wrvs.plugins.ntp.model.DataSet;
-import org.pjia.wrvs.plugins.ntp.model.Segment;
-import org.pjia.wrvs.plugins.ntp.model.Structure;
+import org.pjia.wrvs.plugins.ntp.ui.ImportFileChooser;
+import org.pjia.wrvs.plugins.ntp.ui.ImportThread;
+import org.pjia.wrvs.plugins.ntp.ui.Monitor;
+import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,9 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ImportApp {
 	
-	private static File file = new File("D:\\workspace\\wrvs.plugins\\ntp\\sample.xls");
-	private static WRVSLocalClient localClient;
-
 	/**
 	 * 主方法
 	 * 
@@ -39,29 +28,27 @@ public class ImportApp {
 	 * @param context
 	 */
 	public static void run(String[] args, PluginContext context) {
-		Workbook workbook = null;
-    	try (InputStream is = new FileInputStream(file)) {
-    		workbook = new HSSFWorkbook(is);
-    		Sheet sheet = workbook.getSheet("PT");
-    		Structure structure = StructureBuilder.build(sheet);
-    		DataSet dataSet = MessageBuilder.build(structure);
-    		localClient = new WRVSLocalClient(context);
-    		Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
-    		dataSet.apply(segment);
-    		SegmentUpdater.create(localClient).update(dataSet);
-    	}catch (Exception e) {
-    		log.error("", e);
-		} finally {
-			// 释放本地 Session
-			if(localClient != null) {
-				localClient.release();
-			}
-			if(workbook != null) {
-				try {
-					workbook.close();
-				} catch (IOException e) {
-				}
-			}
+		ImportFileChooser chooser = new ImportFileChooser();
+		File file = chooser.getSelected();
+		// 没有选择文件直接退出
+		if(file == null) return;
+		// 启动 Monitor
+		Monitor monitor = new Monitor();
+		// 启动导入线程
+		ProgressEvent event = new ProgressEvent();
+		event.updateEvent("导入程序即将开始 ...");
+		ImportThread thread = new ImportThread(event, context, file);
+		thread.start();
+		// 阻塞直到导入结束
+		try {
+			monitor.watch(event);
+			monitor.dispose();
+			JOptionPane.showMessageDialog(null, "导入完成");
+		} catch (Exception e) {
+			e.printStackTrace();
+			monitor.dispose();
+			// 异常提示
+			JOptionPane.showMessageDialog(null, e.toString());
 		}
 	}
 }

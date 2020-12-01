@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
 import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
@@ -37,9 +39,22 @@ public class SegmentBuilder {
 	public static Segment build(WRVSLocalClient client, String issueId) throws APIException {
 		Segment segment = getSegment(client, issueId);
 		segment.setIssueId(issueId);
+		buildHistory(segment, client);
 		return segment;
 	}
 	
+	private static void buildHistory(Segment segment, WRVSLocalClient client) throws APIException {
+		String issueId = segment.getIssueId();
+		Command cmd = new Command("im", "viewissue");
+		cmd.addSelection(issueId);
+		cmd.addOption(new Option("showRichContent"));
+		Response response = client.execute(cmd);
+		WorkItem workItem = response.getWorkItem(issueId);
+		String content = workItem.getField("Document History").getValueAsString();
+		Document history = Jsoup.parse(content);
+		segment.setHistory(history);
+	}
+
 	@SuppressWarnings("unchecked")
 	private static Segment getSegment(WRVSLocalClient client, String docId) throws APIException {
 		Command cmd = new Command("im", "issues");

@@ -13,9 +13,9 @@ public class TestMain {
 	public static void main(String[] args) {
 		App app = new App();
 		PluginContext context = new PluginContext();
-		context.setHost("10.112.6.226");
+		context.setHost("almprod.hq.faw.cn");
 		context.setUser("administrator");
-		context.getSelectedIds().add("36949");
+		context.getSelectedIds().add("30555");
 		app.run(args, context);
 	}
 }
