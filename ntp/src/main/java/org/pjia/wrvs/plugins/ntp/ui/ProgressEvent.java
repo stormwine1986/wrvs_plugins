@@ -42,12 +42,13 @@ public class ProgressEvent {
 
 	/**
 	 * 更新导入进度
+	 * @param title 
 	 * 
 	 * @param finished
 	 * @param totalAmount
 	 */
-	public void updateProgress(Integer finished, Integer totalAmount) {
-		String message = String.format(Locale.ROOT, "%s/%s 正在写入 ... ", finished, totalAmount);
+	public void updateProgress(String title, Integer finished, Integer totalAmount) {
+		String message = String.format(Locale.ROOT, "%s/%s %s ... ", finished, totalAmount, title);
 		log.debug(message);
 		events.add(message);
 	}

@@ -1,12 +1,14 @@
 package org.pjia.wrvs.plugins.ntp.internal;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -19,7 +21,10 @@ import org.pjia.wrvs.plugins.ntp.model.Column;
 import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
 import org.pjia.wrvs.plugins.ntp.model.Message;
+import org.pjia.wrvs.plugins.ntp.model.Model;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
+import org.pjia.wrvs.plugins.ntp.model.Template;
+import org.pjia.wrvs.plugins.ntp.model.Templates;
 import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 import org.pjia.wrvs.plugins.ntp.utils.StyleUtil;
 
@@ -36,46 +41,44 @@ public class WorkbookBuilder {
 	
 	/**
 	 * 从 DataSet 构造 Workbook
-	 * @param event 
 	 * 
+	 * @param template 
+	 * @param event 
 	 * @return
+	 * @throws IOException 
 	 */
-	public static Workbook build(DataSet dataSet, ProgressEvent event) {
-		ColumnConfig config = createColumnConfig(dataSet);
-		event.updateEvent("正在装载模板 ... ");
-		Workbook wb = new HSSFWorkbook();
-		buildCover(wb);
-		event.updateEvent("生成 History ... ");
+	public static Workbook build(DataSet dataSet, Template template, ProgressEvent event) throws IOException {
+		ColumnConfig config = createColumnConfig(dataSet, template);
+		event.updateEvent("正在装载模板 ...");
+		Workbook wb = loadTemplateFromServer(template);
+		event.updateEvent("正在生成文件 ...");
 		buildHistory(wb, dataSet);
-		Sheet ptSheet = initPTSheet(dataSet, wb);
-		buildPTSheet(dataSet, config, ptSheet, event);
-		renderPTSheet(ptSheet, dataSet, config);
+		buildChassis(dataSet, config, wb);
 		buildNMMessageSheet(wb, config);
-		buildOthersSheet(wb);
 		return wb;
 	}
 
+	private static void buildChassis(DataSet dataSet, ColumnConfig config, Workbook wb) {
+		Sheet ptSheet = initChassisSheet(dataSet, wb);
+		writeDataToChassisSheet(dataSet, config, ptSheet);
+		renderChassisSheet(ptSheet, dataSet, config);
+	}
+
+	private static Workbook loadTemplateFromServer(Template template) throws IOException {
+		try(InputStream is = new FileInputStream(template.getTempFile())){
+			return new HSSFWorkbook(is);		
+		}
+	}
+
 	private static void buildHistory(Workbook wb, DataSet dataSet) {
-		Sheet sheet = wb.createSheet("History");
-		HistoryBuilder.create().build(dataSet.getSegment().getHistory(), sheet);
-	}
-
-	private static void buildCover(Workbook wb) {
-		wb.createSheet("Cover");
-	}
-
-	/**
-	 * 构造空sheet
-	 * 
-	 * @param wb
-	 */
-	private static void buildOthersSheet(Workbook wb) {
-		wb.createSheet("Tests Message");
-		wb.createSheet("Diagnostic Message");
+		Sheet sheet = wb.getSheet("History");
+		if(sheet != null) {
+			HistoryBuilder.create().build(dataSet.getSegment().getHistory(), sheet);			
+		}
 	}
 
 	private static void buildNMMessageSheet(Workbook wb, ColumnConfig config) {
-		Sheet sheet = wb.createSheet("NM Message");
+		Sheet sheet = wb.getSheet("NM Message");
 		Iterator<Column> iter = config.getColumns().iterator();
 		while(iter.hasNext()) {
 			Column column = iter.next();
@@ -87,7 +90,7 @@ public class WorkbookBuilder {
 		}
 	}
 
-	private static void renderPTSheet(Sheet sheet, DataSet dataSet, ColumnConfig config) {
+	private static void renderChassisSheet(Sheet sheet, DataSet dataSet, ColumnConfig config) {
 		StyleUtil.applyHeaderStyle(sheet.getRow(0), config);
 		// 冻结首行
 		sheet.createFreezePane( 0, 1, 0, 1 );
@@ -108,10 +111,7 @@ public class WorkbookBuilder {
 		**/
 	}
 
-	private static void buildPTSheet(DataSet dataSet, ColumnConfig config, Sheet ptSheet, ProgressEvent event) {
-		Integer totalAmount = dataSet.getTotalAmount();
-		AtomicInteger finished = new AtomicInteger(0);
-		event.updateProgress(finished.get(), totalAmount);
+	private static void writeDataToChassisSheet(DataSet dataSet, ColumnConfig config, Sheet ptSheet) {
 		buildHeader(ptSheet, config);
 		List<Message> messages = dataSet.getMessages();
 		for(Message message :messages) {
@@ -121,12 +121,10 @@ public class WorkbookBuilder {
 			setValue(message.getRow(), config.getColumnByName("Cycle time [ms]"), message.getCycleTime());
 			setValue(message.getRow(), config.getColumnByName("Send Type"), message.getSendType());
 			setValue(message.getRow(), config.getColumnByName("Message Length [Byte]"), message.getMessageLength());
-			event.updateProgress(finished.addAndGet(1), totalAmount);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
 				// signal 数据
 				buildSignal(signal, config);
-				event.updateProgress(finished.addAndGet(1), totalAmount);
 			}
 		}
 		
@@ -215,12 +213,17 @@ public class WorkbookBuilder {
 	}
 
 	private static void setValue(Row row, Column column, String value) {
-		Cell cell = row.createCell(column.getIndex(), CellType.STRING);
-		cell.setCellValue(value);
+		try {
+			if(column == null) return; // 无效列直接忽略
+			Cell cell = row.createCell(column.getIndex(), CellType.STRING);
+			cell.setCellValue(value);			
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
-	private static Sheet initPTSheet(DataSet dataSet, Workbook wb) {
-		Sheet ptSheet = wb.createSheet("PT");
+	private static Sheet initChassisSheet(DataSet dataSet, Workbook wb) {
+		Sheet ptSheet = wb.getSheet(Model.SHEET_NAME_CHASSIS);
 		int rIndex = 1;
 		List<Message> messages = dataSet.getMessages();
 		for(Message message :messages) {
@@ -249,43 +252,45 @@ public class WorkbookBuilder {
 		return 2 + bitMatrix.size();
 	}
 
-	private static ColumnConfig createColumnConfig(DataSet dataSet) {
+	private static ColumnConfig createColumnConfig(DataSet dataSet, Template template) {
 		List<Column> columns = new ArrayList<>(10);
+		ColumnConfig config = new ColumnConfig(columns);
 		// 组装 Excel 列配置
-		columns.add(new Column("Message ID", 0));
-		columns.add(new Column("Message Name", 1));
-		columns.add(new Column("Cycle time [ms]", 2));
-		columns.add(new Column("Send Type", 3));
-		columns.add(new Column("Message Length [Byte]", 4));
-		columns.add(new Column("Byte Number", 5));
-		columns.add(new Column("Bit Number", 6));
-		columns.add(new Column("Signal Length [Bit]", 7));
-		columns.add(new Column("Start Bit-No", 8));
-		columns.add(new Column("Event of signal", 9));
-		columns.add(new Column("External Conditions", 10));
-		columns.add(new Column("Signal Name", 11));
-		columns.add(new Column("Signal Description", 12));
-		columns.add(new Column("Signal Initial", 13));
-		columns.add(new Column("Signal Initial Remark", 14));
-		columns.add(new Column("Invalid Value", 15));
-		columns.add(new Column("Invalid Value Remark", 16));
-		columns.addAll(buildRSCols(dataSet, 17));
-		columns.add(new Column("Physical Range", lastestIndex(columns) + 5));
-		columns.addAll(buildMatrixCols(dataSet, lastestIndex(columns) + 1));
-		columns.add(new Column("Normal", lastestIndex(columns) + 4));
-		columns.add(new Column("Physical Resolution", lastestIndex(columns) + 9));
-		columns.add(new Column("", lastestIndex(columns) + 4));
-		return new ColumnConfig(columns);
+		config.addColumn(new Column("Message ID"));
+		config.addColumn(new Column("Message Name"));
+		config.addColumn(new Column("Cycle time [ms]"));
+		config.addColumn(new Column("Send Type"));
+		config.addColumn(new Column("Message Length [Byte]"));
+		config.addColumn(new Column("Byte Number"));
+		config.addColumn(new Column("Bit Number"));
+		config.addColumn(new Column("Signal Length [Bit]"));
+		config.addColumn(new Column("Start Bit-No"));
+		config.addColumn(new Column("Event of signal"));
+		if(Templates.HQ.equals(template.getDisplay())) {
+			config.addColumn(new Column("External Conditions"));		
+		}
+		config.addColumn(new Column("Signal Name"));
+		config.addColumn(new Column("Signal Description"));
+		config.addColumn(new Column("Signal Initial"));
+		config.addColumn(new Column("Signal Initial Remark"));
+		config.addColumn(new Column("Invalid Value"));
+		if(Templates.HQ.equals(template.getDisplay())) {
+			config.addColumn(new Column("Invalid Value Remark"));
+		}
+		buildRSCols(dataSet, config);
+		config.addColumn(new Column("Physical Range"), 5);
+		buildMatrixCols(dataSet, config);
+		config.addColumn(new Column("Normal"), 4);
+		config.addColumn(new Column("Physical Resolution"), 9);
+		config.addColumn(new Column(""), 4);
+		return config;
 	}
 
-	private static List<Column> buildMatrixCols(DataSet dataSet, int startIndex) {
-		List<Column> result = new ArrayList<>(10);
+	private static void buildMatrixCols(DataSet dataSet, ColumnConfig config) {
 		List<String> keys = getMatrixKeys(dataSet);
-		int i = startIndex;
 		for(String key: keys) {
-			result.add(new Column(key, i++));
+			config.addColumn(new Column(key));
 		}
-		return result;
 	}
 
 	private static List<String> getMatrixKeys(DataSet dataSet) {
@@ -311,21 +316,11 @@ public class WorkbookBuilder {
 		return matrixkeys;
 	}
 
-	private static int lastestIndex(List<Column> columns) {
-		if(columns.size() == 0) {
-			return -1;
-		}
-		return columns.get(columns.size() - 1).getIndex();
-	}
-
-	private static List<Column> buildRSCols(DataSet dataSet, int startIndex) {
-		List<Column> result = new ArrayList<>(10);
+	private static void buildRSCols(DataSet dataSet, ColumnConfig config) {
 		Set<String> rsKeys = totalRSKey(dataSet);
-		int i = startIndex;
 		for(String rskey :rsKeys) {
-			result.add(new Column(rskey, i++));
+			config.addColumn(new Column(rskey));
 		}
-		return result;
 	}
 
 	private static Set<String> totalRSKey(DataSet dataSet) {

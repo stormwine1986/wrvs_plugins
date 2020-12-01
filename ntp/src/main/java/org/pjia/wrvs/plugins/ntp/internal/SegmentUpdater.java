@@ -50,20 +50,20 @@ public class SegmentUpdater {
 	public void update(DataSet dataSet, ProgressEvent event) {
 		Integer totalAmount = dataSet.getTotalAmount();
 		AtomicInteger finished = new AtomicInteger(0);
-		event.updateProgress(finished.get(), totalAmount);
+		event.updateProgress("正在写入", finished.get(), totalAmount);
 		this.dataSet = dataSet; 
 		List<Message> messages = dataSet.getMessages();
 		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
 			// 返回 message heading item id
 			String mid = saveMessage(message, segment);
-			event.updateProgress(finished.addAndGet(1), totalAmount);
+			event.updateProgress("正在写入", finished.addAndGet(1), totalAmount);
 			message.setIssueId(mid);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
 				// 返回 Signal item id
 				String sid = saveSignal(signal, message);
-				event.updateProgress(finished.addAndGet(1), totalAmount);
+				event.updateProgress("正在写入", finished.addAndGet(1), totalAmount);
 				signal.setIssueId(sid);
 			}
 		}

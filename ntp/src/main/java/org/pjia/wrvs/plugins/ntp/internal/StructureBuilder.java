@@ -62,6 +62,7 @@ public class StructureBuilder {
 	
 	private static String getColumnValue(Row row, Column column) {
 		Cell cell = row.getCell(column.getIndex());
+		if(cell == null) return ""; // 空值直接返回
 		if(CellType.BLANK.equals(cell.getCellType())) {
 			// 返回空字符串
 			return "";

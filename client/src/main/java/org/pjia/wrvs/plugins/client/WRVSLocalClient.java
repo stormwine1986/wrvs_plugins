@@ -25,6 +25,7 @@ public class WRVSLocalClient {
 		point.setAutoStartIntegrityClient(true);
 		session = point.getCommonSession();
 		session.setDefaultHostname(context.getHost());
+		session.setDefaultPort(Integer.valueOf(context.getPort()));
 		session.setDefaultUsername(context.getUser());
 	}
 	
@@ -70,9 +71,9 @@ public class WRVSLocalClient {
 	public byte[] getResource(String path) throws IOException {
 		InputStream is = null;
 		try {
-			String hostname = session.getIntegrationPoint().getHostname();
-			int port = session.getIntegrationPoint().getPort();
-			URL url = new URL(String.format("http://%s:%s/%s", hostname, port, path));
+			String hostname = session.getDefaultHostname();
+			int port = session.getDefaultPort();
+			URL url = new URL(String.format("http://%s:%s%s", hostname, port, path));
 			URLConnection conn = url.openConnection();
 			is = conn.getInputStream();
 			return IOUtils.toByteArray(is);

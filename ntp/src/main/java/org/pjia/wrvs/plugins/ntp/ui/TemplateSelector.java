@@ -1,9 +1,9 @@
 package org.pjia.wrvs.plugins.ntp.ui;
 
-import java.awt.CardLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.JButton;
@@ -11,11 +11,14 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import org.pjia.wrvs.plugins.ntp.model.Template;
+import org.pjia.wrvs.plugins.ntp.model.Templates;
+
 public class TemplateSelector implements ActionListener {
 
 	private JFrame mainFrame;
 	private Semaphore semaphore = new Semaphore(1);
-	private JComboBox<String> comboBox;
+	private JComboBox<Template> comboBox;
 
 	public TemplateSelector() {
 		mainFrame = new JFrame();
@@ -24,9 +27,7 @@ public class TemplateSelector implements ActionListener {
 		mainFrame.setLocationRelativeTo(null);
 		JPanel panel = new JPanel(new GridLayout(2,1));
 		mainFrame.add(panel);
-		comboBox = new JComboBox<String>();
-		comboBox.addItem("红旗");
-		comboBox.addItem("奔腾");
+		comboBox = buildTemplateSelector();
 		panel.add(comboBox);
 		JButton button = new JButton("导  出");
 		panel.add(button);
@@ -40,18 +41,28 @@ public class TemplateSelector implements ActionListener {
 		}
 	}
 
+	private JComboBox<Template> buildTemplateSelector() {
+		JComboBox<Template> comboBox = new JComboBox<Template>();
+		Iterator<Template> iter = Templates.ALL.iterator();
+		while(iter.hasNext()) {
+			Template template = iter.next();
+			comboBox.addItem(template);
+		}
+		return comboBox;
+	}
+
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		semaphore.release(1);
 	}
 	
-	public String getSelectedItem() {
+	public Template getSelectedItem() {
 		try {
 			semaphore.acquire(1);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		return (String) comboBox.getSelectedItem();
+		return (Template) comboBox.getSelectedItem();
 	}
 
 	public void dispose() {

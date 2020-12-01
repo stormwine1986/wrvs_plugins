@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -22,6 +24,7 @@ import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
 import org.pjia.wrvs.plugins.ntp.model.Structure;
+import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -170,20 +173,24 @@ public class MessageBuilder {
 	 * 从 Segment 构建 DataSet
 	 * 
 	 * @param segment segment
+	 * @param event 
 	 * @return DataSet
 	 * @throws APIException 
 	 */
-	public static DataSet build(Segment segment, WRVSLocalClient localClient) {
+	public static DataSet build(Segment segment, WRVSLocalClient localClient, ProgressEvent event) {
 		// 选择所有非 heading 条目
 		List<Node> nodes = segment.getNodes().stream()
 			.filter(node -> !"Heading".equals(node.getCategroty()))
 			.collect(Collectors.toList());
+		event.updateProgress("正在读取内容", 0, nodes.size());
+		AtomicInteger i = new AtomicInteger(0);
 		List<Signal> signals = new ArrayList<>();
 		for(Node node :nodes) {
 			Signal signal = build(node, localClient);
 			if(signal != null) {
 				signals.add(signal);				
 			}
+			event.updateProgress("正在读取内容", i.addAndGet(1), nodes.size());
 		}
 		
 		DataSet dataSet = buildDataSet(signals);
@@ -275,7 +282,7 @@ public class MessageBuilder {
 	}
 
 	private static void buildNormal(Signal signal, Field field) {
-		if(field != null) {
+		if(field != null && StringUtils.isNotBlank(field.getValueAsString())) {
 			String content = field.getValueAsString();
 			if(content.indexOf("</table>") > -1) {
 				Document document = Jsoup.parse(content.replace("<!-- MKS HTML -->", ""));

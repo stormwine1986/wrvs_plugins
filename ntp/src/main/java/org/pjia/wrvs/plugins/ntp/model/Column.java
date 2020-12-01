@@ -24,4 +24,8 @@ public class Column {
 		this.name = attrName;
 		this.index = columnIndex;
 	}
+	
+	public Column(String attrName) {
+		this.name = attrName;
+	}
 }
