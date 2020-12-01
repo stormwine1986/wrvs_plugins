@@ -18,12 +18,15 @@ import com.mks.api.response.APIException;
 import com.mks.api.response.Response;
 import com.mks.api.response.WorkItem;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 文档更新者
  * 
  * @author pjia
  *
  */
+@Slf4j
 public class SegmentUpdater {
 	
 	public static SegmentUpdater create(WRVSLocalClient localClient) {
@@ -83,7 +86,7 @@ public class SegmentUpdater {
 			cmd.addOption(new Option("field", FieldValue.create("State", "Inactive").toString()));
 			localClient.execute(cmd);
 		}catch (APIException e) {
-			System.out.println(e.getResponse().toString());
+			log.error(e.getResponse().toString());
 		}
 	}
 
@@ -154,7 +157,7 @@ public class SegmentUpdater {
 				return response.getResult().getField("resultant").getValueAsString();
 			}
 		}catch (APIException e) {
-			System.out.println(e.getResponse().toString());
+			log.error(e.getResponse().toString());
 			return null;
 		}
 	}
@@ -206,7 +209,7 @@ public class SegmentUpdater {
 				return response.getResult().getField("resultant").getValueAsString();
 			}
 		}catch (APIException e) {
-			System.out.println(e.getResponse().toString());
+			log.error(e.getResponse().toString());
 			return null;
 		}
 	}

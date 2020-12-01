@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 导入事件
@@ -12,6 +13,7 @@ import lombok.Data;
  * @author pjia
  *
  */
+@Slf4j
 @Data
 public class ProgressEvent {
 	
@@ -34,7 +36,7 @@ public class ProgressEvent {
 	 * @param event
 	 */
 	public void updateEvent(String event) {
-		System.out.println(event);
+		log.debug(event);
 		events.add(event);
 	}
 
@@ -46,7 +48,7 @@ public class ProgressEvent {
 	 */
 	public void updateProgress(Integer finished, Integer totalAmount) {
 		String message = String.format(Locale.ROOT, "%s/%s 正在写入 ... ", finished, totalAmount);
-		System.out.println(message);
+		log.debug(message);
 		events.add(message);
 	}
 }

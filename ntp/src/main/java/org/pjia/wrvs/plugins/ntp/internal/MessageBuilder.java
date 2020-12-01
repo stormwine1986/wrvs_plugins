@@ -32,12 +32,15 @@ import com.mks.api.response.Field;
 import com.mks.api.response.Response;
 import com.mks.api.response.WorkItem;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Message 对象构造者
  * 
  * @author pjia
  *
  */
+@Slf4j
 public class MessageBuilder {
 
 	/**
@@ -241,7 +244,7 @@ public class MessageBuilder {
 			
 			return signal;
 		}catch (APIException e) {
-			System.out.println(e.getResponse().toString());
+			log.error(e.getResponse().toString());
 			return null;
 		}
 	}

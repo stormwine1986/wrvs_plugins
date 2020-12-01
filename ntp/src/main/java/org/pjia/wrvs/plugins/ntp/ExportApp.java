@@ -27,7 +27,7 @@ public class ExportApp {
 		// 显示模板选择界面
 		TemplateSelector selector = new TemplateSelector();
 		String selectedItem = selector.getSelectedItem();
-		System.out.println("selectedItem = " + selectedItem);
+		log.debug("selectedItem = " + selectedItem);
 		selector.dispose();
 		// 显示 Monitor
 		Monitor monitor = new Monitor();

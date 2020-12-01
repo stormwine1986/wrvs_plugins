@@ -45,7 +45,7 @@ public class ImportApp {
 			monitor.dispose();
 			JOptionPane.showMessageDialog(null, "导入完成");
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("", e);
 			monitor.dispose();
 			// 异常提示
 			JOptionPane.showMessageDialog(null, e.toString());

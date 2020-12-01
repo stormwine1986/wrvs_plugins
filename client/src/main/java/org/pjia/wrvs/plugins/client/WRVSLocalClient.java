@@ -1,6 +1,11 @@
 package org.pjia.wrvs.plugins.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+
+import org.apache.commons.io.IOUtils;
 
 import com.mks.api.CmdRunner;
 import com.mks.api.Command;
@@ -51,6 +56,32 @@ public class WRVSLocalClient {
 		} finally {
 			if(cmdRunner != null) {
 				cmdRunner.release();
+			}
+		}
+	}
+	
+	/**
+	 * 获取服务器部署的资源
+	 * 
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	public byte[] getResource(String path) throws IOException {
+		InputStream is = null;
+		try {
+			String hostname = session.getIntegrationPoint().getHostname();
+			int port = session.getIntegrationPoint().getPort();
+			URL url = new URL(String.format("http://%s:%s/%s", hostname, port, path));
+			URLConnection conn = url.openConnection();
+			is = conn.getInputStream();
+			return IOUtils.toByteArray(is);
+		}finally {
+			if(is != null) {
+				try {
+					is.close();				
+				}catch (IOException e) {
+				}
 			}
 		}
 	}

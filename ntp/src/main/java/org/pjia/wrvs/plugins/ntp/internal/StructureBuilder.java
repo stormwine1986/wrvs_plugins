@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.pjia.wrvs.plugins.ntp.model.Column;
 import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
 import org.pjia.wrvs.plugins.ntp.model.Message;
+import org.pjia.wrvs.plugins.ntp.model.Model;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
 import org.pjia.wrvs.plugins.ntp.model.Structure;
 
@@ -33,8 +34,8 @@ public class StructureBuilder {
 		ColumnConfig config = analysisColumns(headerRow);
 		// 构建 message - signal 结构
 		List<Message> result = new ArrayList<>(10);
-    	Column colMessageName = config.getColumnByName("Message Name");
-    	Column colSignalName = config.getColumnByName("Signal Name");
+    	Column colMessageName = config.getColumnByName(Model.STRUCTURE_MESSAGE);
+    	Column colSignalName = config.getColumnByName(Model.STRUCTURE_SIGNAL);
     	for(int i = 1; i <= sheet.getLastRowNum(); i++) {
     		Row row = sheet.getRow(i);
     		String messageName = getColumnValue(row, colMessageName);
