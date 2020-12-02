@@ -16,6 +16,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.model.Column;
 import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
@@ -24,7 +26,6 @@ import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
 import org.pjia.wrvs.plugins.ntp.model.Structure;
-import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -177,12 +178,13 @@ public class MessageBuilder {
 	 * @return DataSet
 	 * @throws APIException 
 	 */
-	public static DataSet build(Segment segment, WRVSLocalClient localClient, ProgressEvent event) {
+	public static DataSet build(Segment segment, WRVSLocalClient localClient) {
 		// 选择所有非 heading 条目
 		List<Node> nodes = segment.getNodes().stream()
 			.filter(node -> !"Heading".equals(node.getCategroty()))
 			.collect(Collectors.toList());
-		event.updateProgress("正在读取内容", 0, nodes.size());
+		// event.updateProgress("正在读取内容", 0, nodes.size());
+		PluginEventMgr.recordEvent(new Event("正在读取内容", 0, nodes.size()));
 		AtomicInteger i = new AtomicInteger(0);
 		List<Signal> signals = new ArrayList<>();
 		for(Node node :nodes) {
@@ -190,7 +192,8 @@ public class MessageBuilder {
 			if(signal != null) {
 				signals.add(signal);				
 			}
-			event.updateProgress("正在读取内容", i.addAndGet(1), nodes.size());
+			// event.updateProgress("正在读取内容", i.addAndGet(1), nodes.size());
+			PluginEventMgr.recordEvent(new Event("正在读取内容", i.addAndGet(1), nodes.size()));
 		}
 		
 		DataSet dataSet = buildDataSet(signals);

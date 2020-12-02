@@ -16,7 +16,7 @@ public class TestMain {
 		context.setHost("almprod.hq.faw.cn");
 		context.setUser("administrator");
 		context.setPort("7001");
-		context.getSelectedIds().add("30555");
+		context.getSelectedIds().add("30203");
 		app.run(args, context);
 	}
 }

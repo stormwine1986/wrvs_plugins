@@ -5,12 +5,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
 import org.pjia.wrvs.plugins.ntp.model.Message;
 import org.pjia.wrvs.plugins.ntp.model.Node;
 import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
-import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import com.mks.api.Command;
 import com.mks.api.Option;
@@ -45,30 +46,29 @@ public class SegmentUpdater {
 	 * 
 	 * @param localClient
 	 * @param dataSet
-	 * @param event 
 	 */
-	public void update(DataSet dataSet, ProgressEvent event) {
+	public void update(DataSet dataSet) {
 		Integer totalAmount = dataSet.getTotalAmount();
 		AtomicInteger finished = new AtomicInteger(0);
-		event.updateProgress("正在写入", finished.get(), totalAmount);
+		PluginEventMgr.recordEvent(new Event("正在写入", finished.get(), totalAmount));
 		this.dataSet = dataSet; 
 		List<Message> messages = dataSet.getMessages();
 		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
 			// 返回 message heading item id
 			String mid = saveMessage(message, segment);
-			event.updateProgress("正在写入", finished.addAndGet(1), totalAmount);
+			PluginEventMgr.recordEvent(new Event("正在写入", finished.addAndGet(1), totalAmount));
 			message.setIssueId(mid);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
 				// 返回 Signal item id
 				String sid = saveSignal(signal, message);
-				event.updateProgress("正在写入", finished.addAndGet(1), totalAmount);
+				PluginEventMgr.recordEvent(new Event("正在写入", finished.addAndGet(1), totalAmount));
 				signal.setIssueId(sid);
 			}
 		}
 		doDeleteAction(dataSet);
-		event.updateEvent("写入完成");
+		PluginEventMgr.recordEvent(new Event("写入完成", finished.addAndGet(1), totalAmount));
 	}
 
 	private void doDeleteAction(DataSet dataSet) {

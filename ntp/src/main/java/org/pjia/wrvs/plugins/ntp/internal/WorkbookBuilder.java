@@ -17,6 +17,8 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.model.Column;
 import org.pjia.wrvs.plugins.ntp.model.ColumnConfig;
 import org.pjia.wrvs.plugins.ntp.model.DataSet;
@@ -25,11 +27,12 @@ import org.pjia.wrvs.plugins.ntp.model.Model;
 import org.pjia.wrvs.plugins.ntp.model.Signal;
 import org.pjia.wrvs.plugins.ntp.model.Template;
 import org.pjia.wrvs.plugins.ntp.model.Templates;
-import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 import org.pjia.wrvs.plugins.ntp.utils.StyleUtil;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Excel 表格构造者
@@ -37,6 +40,7 @@ import com.google.gson.JsonObject;
  * @author pjia
  *
  */
+@Slf4j
 public class WorkbookBuilder {
 	
 	/**
@@ -47,11 +51,11 @@ public class WorkbookBuilder {
 	 * @return
 	 * @throws IOException 
 	 */
-	public static Workbook build(DataSet dataSet, Template template, ProgressEvent event) throws IOException {
+	public static Workbook build(DataSet dataSet, Template template) throws IOException {
 		ColumnConfig config = createColumnConfig(dataSet, template);
-		event.updateEvent("正在装载模板 ...");
+		PluginEventMgr.recordEvent(new Event("正在装载模板 ... "));
 		Workbook wb = loadTemplateFromServer(template);
-		event.updateEvent("正在生成文件 ...");
+		PluginEventMgr.recordEvent(new Event("正在生成文件 ... "));
 		buildHistory(wb, dataSet);
 		buildChassis(dataSet, config, wb);
 		buildNMMessageSheet(wb, config);
@@ -218,7 +222,7 @@ public class WorkbookBuilder {
 			Cell cell = row.createCell(column.getIndex(), CellType.STRING);
 			cell.setCellValue(value);			
 		}catch (Exception e) {
-			e.printStackTrace();
+			log.error("", e);
 		}
 	}
 

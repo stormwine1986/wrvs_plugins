@@ -10,6 +10,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.pjia.wrvs.plugins.client.PluginContext;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.internal.MessageBuilder;
 import org.pjia.wrvs.plugins.ntp.internal.SegmentBuilder;
 import org.pjia.wrvs.plugins.ntp.internal.SegmentUpdater;
@@ -28,19 +30,13 @@ import org.pjia.wrvs.plugins.ntp.utils.AssertUtil;
  */
 public class ImportThread extends Thread {
 	
-	private ProgressEvent event;
 	private WRVSLocalClient localClient;
 	private PluginContext context;
 	private File file;
 	
-	public ImportThread(ProgressEvent event, PluginContext context, File file) {
-		this.event = event;
+	public ImportThread(PluginContext context, File file) {
 		this.context = context;
 		this.file = file;
-	}
-	
-	public ProgressEvent getEvent() {
-		return event;
 	}
 
 	@Override
@@ -50,18 +46,18 @@ public class ImportThread extends Thread {
     		workbook = new HSSFWorkbook(is);
     		Sheet sheet = workbook.getSheet(Model.SHEET_NAME_CHASSIS);
     		AssertUtil.checkSheetMustNotNull(Model.SHEET_NAME_CHASSIS, sheet);
-    		event.updateEvent("正在解析文件结构 ...");
+    		PluginEventMgr.recordEvent(new Event("正在解析文件结构 ... "));
     		Structure structure = StructureBuilder.build(sheet);
-    		event.updateEvent("正在加载文件内容 ...");
+    		PluginEventMgr.recordEvent(new Event("正在加载文件内容 ... "));
     		DataSet dataSet = MessageBuilder.build(structure);
     		localClient = new WRVSLocalClient(context);
     		Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
     		dataSet.apply(segment);
-    		SegmentUpdater.create(localClient).update(dataSet, event);
+    		SegmentUpdater.create(localClient).update(dataSet);
+    		localClient.viewDocument(context.getSelectedIds().get(0));
     	}catch (Exception e) {
-    		event.setEx(e);
+    		PluginEventMgr.recordEvent(new Event(e));
 		} finally {
-			event.setStop(true);
 			// 释放占用的资源
 			if(localClient != null) {
 				localClient.release();

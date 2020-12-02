@@ -8,12 +8,20 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 
-public class Monitor {
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.IMonitor;
+
+import lombok.Getter;
+
+public class Monitor implements IMonitor {
 	
 	private JLabel label;
 	private JFrame mainFrame;
+	private Thread worker;
+	@Getter
+	private Exception ex;
 
-	public Monitor() {
+	public Monitor(String name) {
 		mainFrame = new JFrame();
 		mainFrame.setSize(350, 100);
 		mainFrame.setLocationRelativeTo(null);
@@ -22,39 +30,35 @@ public class Monitor {
 		JPanel panel = new JPanel(new BorderLayout());
 		mainFrame.add(panel);
 		panel.setBorder(border);
-		label = new JLabel("", JLabel.CENTER);
+		label = new JLabel(name + "即将开始", JLabel.CENTER);
 		panel.add(label,BorderLayout.CENTER);
 		mainFrame.setVisible(true);
 	}
 
 	/**
-	 * 监视 Progress Event
-	 * 
-	 * @param event
-	 * @throws Exception
+	 * 解散
 	 */
-	public void watch(ProgressEvent event) throws Exception {
-		while(true) {
-			if(event.isStop() && event.getEx() != null) {
-				// 因异常结束, 抛出异常
-				throw event.getEx();
+	public void dispose() {
+		mainFrame.dispose();
+	}
+
+	@Override
+	public void fired(Event event) {
+		if(event.getThreadId() == this.worker.getId()) {
+			if(event.isExEvent()) {
+				this.ex = event.getEx();
+			} else {
+				label.setText(event.getMessage());				
 			}
-			if(event.isStop() && event.getEx() == null) {
-				// 正常结束，直接退出 watch 方法
-				return;
-			}
-			// 进行中, 更新 Monitor
-			String eventMessage = event.getLatestEvent();
-			update(eventMessage);
-			Thread.sleep(200L);
 		}
 	}
 
-	private void update(String eventMessage) {
-		label.setText(eventMessage);
-	}
-
-	public void dispose() {
-		mainFrame.dispose();
+	/**
+	 * 指定 worker 线程
+	 * 
+	 * @param thread
+	 */
+	public void attach(Thread thread) {
+		this.worker = thread;
 	}
 }

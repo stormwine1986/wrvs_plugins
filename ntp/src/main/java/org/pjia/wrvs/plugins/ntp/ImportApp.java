@@ -5,10 +5,10 @@ import java.io.File;
 import javax.swing.JOptionPane;
 
 import org.pjia.wrvs.plugins.client.PluginContext;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.ui.ImportFileChooser;
 import org.pjia.wrvs.plugins.ntp.ui.ImportThread;
 import org.pjia.wrvs.plugins.ntp.ui.Monitor;
-import org.pjia.wrvs.plugins.ntp.ui.ProgressEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,17 +33,16 @@ public class ImportApp {
 		// 没有选择文件直接退出
 		if(file == null) return;
 		// 启动 Monitor
-		Monitor monitor = new Monitor();
+		Monitor monitor = new Monitor("导入程序");
 		// 启动导入线程
-		ProgressEvent event = new ProgressEvent();
-		event.updateEvent("导入程序即将开始 ...");
-		ImportThread thread = new ImportThread(event, context, file);
+		PluginEventMgr.addMonitor(monitor);
+		ImportThread thread = new ImportThread(context, file);
+		monitor.attach(thread);
 		thread.start();
-		// 阻塞直到导入结束
 		try {
-			monitor.watch(event);
+			// 阻塞直到导入结束
+			thread.join();
 			monitor.dispose();
-			JOptionPane.showMessageDialog(null, "导入完成");
 		} catch (Exception e) {
 			log.error("", e);
 			monitor.dispose();

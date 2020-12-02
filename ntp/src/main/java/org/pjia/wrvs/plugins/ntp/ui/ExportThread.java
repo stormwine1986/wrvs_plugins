@@ -6,6 +6,8 @@ import java.io.IOException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.pjia.wrvs.plugins.client.PluginContext;
 import org.pjia.wrvs.plugins.client.WRVSLocalClient;
+import org.pjia.wrvs.plugins.event.Event;
+import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.internal.MessageBuilder;
 import org.pjia.wrvs.plugins.ntp.internal.SegmentBuilder;
 import org.pjia.wrvs.plugins.ntp.internal.WorkbookBuilder;
@@ -20,12 +22,10 @@ public class ExportThread extends Thread {
 	
 	private static WRVSLocalClient localClient;
 	
-	private ProgressEvent event;
 	private PluginContext context;
 	private Template template;
 
-	public ExportThread(ProgressEvent event, PluginContext context, Template template) {
-		this.event = event;
+	public ExportThread(PluginContext context, Template template) {
 		this.context = context;
 		this.template = template;
 	}
@@ -38,20 +38,19 @@ public class ExportThread extends Thread {
 			localClient = new WRVSLocalClient(context);
 			loadTemplate();
 			// 读取文档条目结构
-			event.updateEvent("正在分析文档结构 ... ");
+			PluginEventMgr.recordEvent(new Event("正在分析文档结构 ... "));
 			Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
 			// 读取所有非 Heading 条目的全部信息，构建 DataSet
-			DataSet dataSet = MessageBuilder.build(segment, localClient, event);
-			workbook = WorkbookBuilder.build(dataSet, template, event);
+			DataSet dataSet = MessageBuilder.build(segment, localClient);
+			workbook = WorkbookBuilder.build(dataSet, template);
 			outputStream = new FileOutputStream(template.getTempFile());
 			workbook.write(outputStream);
 			outputStream.flush();
 		} catch (Exception e) {
-			e.printStackTrace();
-			event.setEx(e);
+			log.error("", e);
+			PluginEventMgr.recordEvent(new Event(e));
 		} finally {
-			event.setStop(true);
-			event.updateEvent("导出完成 ... ");
+			PluginEventMgr.recordEvent(new Event("导出完成"));
 			if(localClient != null) { localClient.release(); }
 			if(workbook != null) {  
 				try {
