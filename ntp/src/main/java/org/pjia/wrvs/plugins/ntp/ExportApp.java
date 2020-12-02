@@ -5,10 +5,10 @@ import java.awt.Desktop;
 import javax.swing.JOptionPane;
 
 import org.pjia.wrvs.plugins.client.PluginContext;
+import org.pjia.wrvs.plugins.event.Monitor;
 import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.model.Template;
 import org.pjia.wrvs.plugins.ntp.ui.ExportThread;
-import org.pjia.wrvs.plugins.ntp.ui.Monitor;
 import org.pjia.wrvs.plugins.ntp.ui.TemplateSelector;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class ExportApp {
 		// 启动导出线程
 		try {
 			ExportThread thread = new ExportThread(context, template);
-			monitor.attach(thread);
+			monitor.watch(thread);
 			thread.start();
 			// 阻塞直到导出结束
 			thread.join();

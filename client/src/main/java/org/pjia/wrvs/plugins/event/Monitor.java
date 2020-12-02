@@ -1,4 +1,4 @@
-package org.pjia.wrvs.plugins.ntp.ui;
+package org.pjia.wrvs.plugins.event;
 
 import java.awt.BorderLayout;
 
@@ -13,6 +13,31 @@ import org.pjia.wrvs.plugins.event.IMonitor;
 
 import lombok.Getter;
 
+/**
+ * 工作线程监视者
+ * 
+ * 用法：
+  Monitor monitor = new Monitor("工作线程任务");
+  // 注册为插件事件监听者 
+  PluginEventMgr.addMonitor(monitor);
+  // 创建工作线程
+  TaskThread thread = new TaskThread();
+  // 把监视者附加到工作线程，监听工作线程产生的事件
+  monitor.watch(thread);
+  // 启动工作线程并等待线程结束
+  thread.start();
+  thread.join();
+  if(monitor.getEx() != null) {
+	// 工作线程有异常
+	throw monitor.getEx();
+  }
+  // 解散监视者
+  monitor.dispose();
+ * 
+ * 
+ * @author pjia
+ *
+ */
 public class Monitor implements IMonitor {
 	
 	private JLabel label;
@@ -54,11 +79,11 @@ public class Monitor implements IMonitor {
 	}
 
 	/**
-	 * 指定 worker 线程
+	 * 观察指定的 worker 线程
 	 * 
 	 * @param thread
 	 */
-	public void attach(Thread thread) {
+	public void watch(Thread thread) {
 		this.worker = thread;
 	}
 }

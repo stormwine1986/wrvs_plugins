@@ -68,7 +68,7 @@ public class SegmentUpdater {
 			}
 		}
 		doDeleteAction(dataSet);
-		PluginEventMgr.recordEvent(new Event("写入完成", finished.addAndGet(1), totalAmount));
+		PluginEventMgr.recordEvent(new Event("写入完成"));
 	}
 
 	private void doDeleteAction(DataSet dataSet) {

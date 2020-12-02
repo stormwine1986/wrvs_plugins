@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.apache.commons.collections4.CollectionUtils;
 
 import lombok.Getter;
-import lombok.NonNull;
 
 /**
  * 列配置模型

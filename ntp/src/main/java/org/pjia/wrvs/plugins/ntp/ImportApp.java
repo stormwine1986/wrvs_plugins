@@ -5,10 +5,10 @@ import java.io.File;
 import javax.swing.JOptionPane;
 
 import org.pjia.wrvs.plugins.client.PluginContext;
+import org.pjia.wrvs.plugins.event.Monitor;
 import org.pjia.wrvs.plugins.event.PluginEventMgr;
 import org.pjia.wrvs.plugins.ntp.ui.ImportFileChooser;
 import org.pjia.wrvs.plugins.ntp.ui.ImportThread;
-import org.pjia.wrvs.plugins.ntp.ui.Monitor;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +37,15 @@ public class ImportApp {
 		// 启动导入线程
 		PluginEventMgr.addMonitor(monitor);
 		ImportThread thread = new ImportThread(context, file);
-		monitor.attach(thread);
+		monitor.watch(thread);
 		thread.start();
 		try {
 			// 阻塞直到导入结束
 			thread.join();
+			if(monitor.getEx() != null) {
+				// 工作线程有异常
+				throw monitor.getEx();
+			}
 			monitor.dispose();
 		} catch (Exception e) {
 			log.error("", e);
