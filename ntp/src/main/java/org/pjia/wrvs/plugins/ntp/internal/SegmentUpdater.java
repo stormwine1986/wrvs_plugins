@@ -142,7 +142,7 @@ public class SegmentUpdater {
 								"richContentField", 
 								FieldValue.create(
 										"Normal", 
-										BitMatrixTableBuilder.build(signal.getBitMatrix())
+										BitMatrixTableBuilder.create().build(signal.getBitMatrix())
 								).toString()
 						)
 				);

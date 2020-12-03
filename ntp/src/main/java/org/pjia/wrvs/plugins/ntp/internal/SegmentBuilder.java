@@ -28,6 +28,12 @@ import com.mks.api.response.WorkItemIterator;
  */
 public class SegmentBuilder {
 	
+	private WRVSLocalClient localClient;
+
+	public SegmentBuilder(WRVSLocalClient localClient) {
+		this.localClient = localClient;
+	}
+
 	/**
 	 * 构造
 	 * 
@@ -36,19 +42,19 @@ public class SegmentBuilder {
 	 * @return
 	 * @throws APIException
 	 */
-	public static Segment build(WRVSLocalClient client, String issueId) throws APIException {
-		Segment segment = getSegment(client, issueId);
+	public Segment build(String issueId) throws APIException {
+		Segment segment = getSegment(issueId);
 		segment.setIssueId(issueId);
-		buildHistory(segment, client);
+		buildHistory(segment);
 		return segment;
 	}
 	
-	private static void buildHistory(Segment segment, WRVSLocalClient client) throws APIException {
+	private void buildHistory(Segment segment) throws APIException {
 		String issueId = segment.getIssueId();
 		Command cmd = new Command("im", "viewissue");
 		cmd.addSelection(issueId);
 		cmd.addOption(new Option("showRichContent"));
-		Response response = client.execute(cmd);
+		Response response = localClient.execute(cmd);
 		WorkItem workItem = response.getWorkItem(issueId);
 		String content = workItem.getField("Document History").getValueAsString();
 		Document history = Jsoup.parse(content);
@@ -56,21 +62,21 @@ public class SegmentBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Segment getSegment(WRVSLocalClient client, String docId) throws APIException {
+	private Segment getSegment(String docId) throws APIException {
 		Command cmd = new Command("im", "issues");
 		cmd.addSelection(docId);
 		cmd.addOption(new Option("fields", "Contains"));
-		Response response = client.execute(cmd);
+		Response response = localClient.execute(cmd);
 		WorkItem workItem = response.getWorkItem(docId);
 		List<Item> contents = workItem.getField("Contains").getList();
 		List<String> contentids = contents.stream().map(item->item.getId()).collect(Collectors.toList());
 		if(CollectionUtils.isNotEmpty(contentids)) {}
-		List<Node> nodes = getContents(client, contentids);
+		List<Node> nodes = getContents(contentids);
 		return new Segment(nodes);
 	}
 
 	@SuppressWarnings("unchecked")
-	private static List<Node> getContents(WRVSLocalClient client, List<String> contentids) throws APIException {
+	private List<Node> getContents(List<String> contentids) throws APIException {
 		List<Node> nodes = new LinkedList<>();
 		if(CollectionUtils.isEmpty(contentids)) {
 			// 空文档，不需要进一步加载条目
@@ -86,7 +92,7 @@ public class SegmentBuilder {
 		mv.add("Bit Number");
 		mv.add("Contains");
 		cmd.addOption(new Option("fields", mv));
-		Response response = client.execute(cmd);
+		Response response = localClient.execute(cmd);
 		WorkItemIterator workItems = response.getWorkItems();
 		while(workItems.hasNext()) {
 			// 获取条目
@@ -100,8 +106,18 @@ public class SegmentBuilder {
 			nodes.add(new Node(id, category, messageName, signalName, bitNumber));
 			List<String> subids = contents.stream().map(item->item.getId()).collect(Collectors.toList());
 			// 获取子条目
-			nodes.addAll(getContents(client, subids));
+			nodes.addAll(getContents(subids));
 		}
 		return nodes;
+	}
+
+	/**
+	 * 工厂方法
+	 * 
+	 * @param localClient
+	 * @return
+	 */
+	public static SegmentBuilder create(WRVSLocalClient localClient) {
+		return new SegmentBuilder(localClient);
 	}
 }

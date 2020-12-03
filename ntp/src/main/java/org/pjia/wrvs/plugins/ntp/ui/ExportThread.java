@@ -39,10 +39,10 @@ public class ExportThread extends Thread {
 			loadTemplate();
 			// 读取文档条目结构
 			PluginEventMgr.recordEvent(new Event("正在分析文档结构 ... "));
-			Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
+			Segment segment = SegmentBuilder.create(localClient).build(context.getSelectedIds().get(0));
 			// 读取所有非 Heading 条目的全部信息，构建 DataSet
-			DataSet dataSet = MessageBuilder.build(segment, localClient);
-			workbook = WorkbookBuilder.build(dataSet, template);
+			DataSet dataSet = MessageBuilder.create(localClient).build(segment);
+			workbook = WorkbookBuilder.create().build(dataSet, template);
 			outputStream = new FileOutputStream(template.getTempFile());
 			workbook.write(outputStream);
 			outputStream.flush();

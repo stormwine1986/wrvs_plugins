@@ -16,7 +16,7 @@ public class BitMatrixTableBuilder {
 	 * @param matrix
 	 * @return
 	 */
-	public static String build(JsonArray matrix) {
+	public String build(JsonArray matrix) {
 		StringBuffer buffer = new StringBuffer("<!-- MKS HTML --><table>");
 		for(int i = 0; i < matrix.size(); i++) {
 			JsonArray line = matrix.get(i).getAsJsonArray();
@@ -31,5 +31,13 @@ public class BitMatrixTableBuilder {
 		}
 		buffer.append("</table>");
 		return buffer.toString();
+	}
+	
+	/**
+	 * 工厂方法
+	 * @return
+	 */
+	public static BitMatrixTableBuilder create() {
+		return new BitMatrixTableBuilder();
 	}
 }

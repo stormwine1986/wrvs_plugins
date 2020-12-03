@@ -43,15 +43,15 @@ public class ImportThread extends Thread {
 	public void run() {
 		Workbook workbook = null;
     	try (InputStream is = new FileInputStream(file)) {
+    		localClient = new WRVSLocalClient(context);
     		workbook = new HSSFWorkbook(is);
     		Sheet sheet = workbook.getSheet(Model.SHEET_NAME_CHASSIS);
     		AssertUtil.checkSheetMustNotNull(Model.SHEET_NAME_CHASSIS, sheet);
     		PluginEventMgr.recordEvent(new Event("正在解析文件结构 ... "));
-    		Structure structure = StructureBuilder.build(sheet);
+    		Structure structure = StructureBuilder.create().build(sheet);
     		PluginEventMgr.recordEvent(new Event("正在加载文件内容 ... "));
-    		DataSet dataSet = MessageBuilder.build(structure);
-    		localClient = new WRVSLocalClient(context);
-    		Segment segment = SegmentBuilder.build(localClient, context.getSelectedIds().get(0));
+    		DataSet dataSet = MessageBuilder.create(localClient).build(structure);
+    		Segment segment = SegmentBuilder.create(localClient).build(context.getSelectedIds().get(0));
     		dataSet.apply(segment);
     		SegmentUpdater.create(localClient).update(dataSet);
     		localClient.viewDocument(context.getSelectedIds().get(0));

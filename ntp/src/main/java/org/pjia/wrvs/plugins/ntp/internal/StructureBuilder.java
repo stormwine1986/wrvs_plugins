@@ -23,12 +23,12 @@ import org.pjia.wrvs.plugins.ntp.model.Structure;
 public class StructureBuilder {
 
 	/**
-	 * 构造
+	 * 构造结构
 	 * 
 	 * @param sheet
 	 * @return
 	 */
-	public static Structure build(Sheet sheet) {
+	public Structure build(Sheet sheet) {
 		// 构建列配置
 		Row headerRow = sheet.getRow(0);
 		ColumnConfig config = analysisColumns(headerRow);
@@ -86,5 +86,12 @@ public class StructureBuilder {
     	}
 		return new ColumnConfig(result);
 	}
-
+    
+    /**
+     * 工厂方法
+     * @return
+     */
+    public static StructureBuilder create() {
+    	return new StructureBuilder();
+    }
 }

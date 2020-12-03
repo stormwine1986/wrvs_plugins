@@ -24,6 +24,11 @@ public class HistoryBuilder {
 		
 	}
 	
+	/**
+	 * 工厂方法
+	 * 
+	 * @return
+	 */
 	public static HistoryBuilder create() {
 		return new HistoryBuilder();
 	}

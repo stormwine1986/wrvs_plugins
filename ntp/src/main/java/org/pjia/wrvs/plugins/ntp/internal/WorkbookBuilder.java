@@ -51,7 +51,7 @@ public class WorkbookBuilder {
 	 * @return
 	 * @throws IOException 
 	 */
-	public static Workbook build(DataSet dataSet, Template template) throws IOException {
+	public Workbook build(DataSet dataSet, Template template) throws IOException {
 		ColumnConfig config = createColumnConfig(dataSet, template);
 		PluginEventMgr.recordEvent(new Event("正在装载模板 ... "));
 		Workbook wb = loadTemplateFromServer(template);
@@ -341,6 +341,14 @@ public class WorkbookBuilder {
 		}
 		
 		return rsKeys;
+	}
+	
+	/**
+	 * 工厂方法
+	 * @return
+	 */
+	public static WorkbookBuilder create() {
+		return new WorkbookBuilder();
 	}
 
 }

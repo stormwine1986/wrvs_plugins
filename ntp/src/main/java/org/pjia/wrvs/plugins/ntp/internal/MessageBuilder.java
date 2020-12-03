@@ -47,12 +47,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MessageBuilder {
 
+	private WRVSLocalClient localClient;
+
+	public MessageBuilder(WRVSLocalClient client) {
+		this.localClient = client;
+	}
+
 	/**
 	 * 从 Structure 构造 DataSet
 	 * 
 	 * @param structure structure 结构
 	 */
-	public static DataSet build(Structure structure) {
+	public DataSet build(Structure structure) {
 		List<Message> messages = structure.getMessages();
 		ColumnConfig config = structure.getConfig();
 		for(Message message :messages) {
@@ -65,7 +71,7 @@ public class MessageBuilder {
 		return new DataSet(structure.getMessages());
 	}
 	
-	private static void build(Message message, ColumnConfig columns) {
+	private void build(Message message, ColumnConfig columns) {
 		Row row = message.getRow();
 		message.setId(getColumnValue(row, columns.getColumnByName("Message ID")));
 		message.setCycleTime(getColumnValue(row, columns.getColumnByName("Cycle time [ms]")));
@@ -73,7 +79,7 @@ public class MessageBuilder {
 		message.setMessageLength(getColumnValue(row, columns.getColumnByName("Message Length [Byte]")));
 	}
 
-	private static void build(Signal signal, ColumnConfig columns) {
+	private void build(Signal signal, ColumnConfig columns) {
 		Row row = signal.getRowScope().get(0);
 		signal.setByteNumber(getColumnValue(row, columns.getColumnByName("Byte Number")));
 		signal.setBitNumber(getColumnValue(row, columns.getColumnByName("Bit Number")));
@@ -97,7 +103,7 @@ public class MessageBuilder {
 		}
 	}
 	
-	private static void buildRSInfo(Signal signal, ColumnConfig columns) {
+	private void buildRSInfo(Signal signal, ColumnConfig columns) {
 		JsonObject jsonObject = new JsonObject();
 		// HQ 有 Invalid Value Remark 列，BT 只有 Invalid Value 列，这里适配了两种情况
 		Column base = (columns.getColumnByName("Invalid Value Remark") == null? 
@@ -115,7 +121,7 @@ public class MessageBuilder {
 		signal.setRsInfo(jsonObject);
 	}
 
-	private static void buildMatrix(Signal signal) {
+	private void buildMatrix(Signal signal) {
 		Row row = signal.getRowScope().get(1);
 		// 找到 Function 所在的单元格作为 end
 		int endIndex = getFunctionCellIndex(row);
@@ -135,7 +141,7 @@ public class MessageBuilder {
 		}
 	}
 
-	private static String getStringValue(Cell cell) {
+	private String getStringValue(Cell cell) {
 		if(cell == null) { return ""; }
 		CellType cellType = cell.getCellType();
 		if(CellType.BLANK.equals(cellType)) {
@@ -150,7 +156,7 @@ public class MessageBuilder {
 		}
 	}
 
-	private static int getFunctionCellIndex(Row row) {
+	private int getFunctionCellIndex(Row row) {
 		Iterator<Cell> cellIterator = row.cellIterator();
 		while(cellIterator.hasNext()) {
 			Cell cell = cellIterator.next();
@@ -161,7 +167,7 @@ public class MessageBuilder {
 		return -1;
 	}
 
-	private static String getColumnValue(Row row, Column column) {
+	private String getColumnValue(Row row, Column column) {
 		if(column == null) {
 			// 不存在的列，返回空字符串
 			return "";
@@ -178,7 +184,7 @@ public class MessageBuilder {
 	 * @return DataSet
 	 * @throws APIException 
 	 */
-	public static DataSet build(Segment segment, WRVSLocalClient localClient) {
+	public DataSet build(Segment segment) {
 		// 选择所有非 heading 条目
 		List<Node> nodes = segment.getNodes().stream()
 			.filter(node -> !"Heading".equals(node.getCategroty()))
@@ -188,7 +194,7 @@ public class MessageBuilder {
 		AtomicInteger i = new AtomicInteger(0);
 		List<Signal> signals = new ArrayList<>();
 		for(Node node :nodes) {
-			Signal signal = build(node, localClient);
+			Signal signal = build(node);
 			if(signal != null) {
 				signals.add(signal);				
 			}
@@ -201,7 +207,7 @@ public class MessageBuilder {
 		return dataSet;
 	}
 
-	private static DataSet buildDataSet(List<Signal> signals) {
+	private DataSet buildDataSet(List<Signal> signals) {
 		List<Message> messages = new ArrayList<>();
 		for(Signal signal :signals) {
 			// Group By message
@@ -218,7 +224,7 @@ public class MessageBuilder {
 		return new DataSet(messages);
 	}
 
-	private static Signal build(Node node, WRVSLocalClient localClient) {
+	private Signal build(Node node) {
 		try {
 			Command cmd = new Command("im", "viewissue");
 			cmd.addOption(new Option("showRichContent"));
@@ -259,7 +265,7 @@ public class MessageBuilder {
 		}
 	}
 
-	private static JsonObject buildRSInfo(WorkItem workItem) {
+	private JsonObject buildRSInfo(WorkItem workItem) {
 		JsonObject object = new JsonObject();
 		Field signalReceiver = workItem.getField("Signal Receiver");
 		Field signalSender = workItem.getField("Signal Sender");
@@ -271,7 +277,7 @@ public class MessageBuilder {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static List<String> getPickValue(Field pickField) {
+	private List<String> getPickValue(Field pickField) {
 		List<String> picks = new ArrayList<>(10);
 		if(pickField != null) {
 			String dataType = pickField.getDataType();
@@ -284,7 +290,7 @@ public class MessageBuilder {
 		return picks;
 	}
 
-	private static void buildNormal(Signal signal, Field field) {
+	private void buildNormal(Signal signal, Field field) {
 		if(field != null && StringUtils.isNotBlank(field.getValueAsString())) {
 			String content = field.getValueAsString();
 			if(content.indexOf("</table>") > -1) {
@@ -297,7 +303,7 @@ public class MessageBuilder {
 		}
 	}
 
-	private static JsonArray htmlTableToMatrix(Document document) {
+	private JsonArray htmlTableToMatrix(Document document) {
 		Elements trs = document.getElementsByTag("tr");
 		JsonArray matrix = new JsonArray();
 		for(int i = 0; i < trs.size(); i++) {
@@ -313,9 +319,18 @@ public class MessageBuilder {
 		return matrix;
 	}
 
-	private static String getFieldStringValue(Field field) {
+	private String getFieldStringValue(Field field) {
 		if(field == null) return "";
 		if(field.getValueAsString() == null) return "";
 		return field.getValueAsString();
+	}
+	
+	/**
+	 * 工厂方法
+	 * @param client
+	 * @return
+	 */
+	public static MessageBuilder create(WRVSLocalClient client) {
+		return new MessageBuilder(client);
 	}
 }
