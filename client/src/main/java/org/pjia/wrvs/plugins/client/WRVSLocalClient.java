@@ -11,7 +11,6 @@ import com.mks.api.CmdRunner;
 import com.mks.api.Command;
 import com.mks.api.IntegrationPoint;
 import com.mks.api.IntegrationPointFactory;
-import com.mks.api.Option;
 import com.mks.api.Session;
 import com.mks.api.response.APIException;
 import com.mks.api.response.Response;
@@ -86,12 +85,5 @@ public class WRVSLocalClient {
 				}
 			}
 		}
-	}
-
-	public void viewDocument(String id) throws APIException {
-		Command cmd = new Command("im", "viewsegment");
-		cmd.addOption(new Option("--gui"));
-		cmd.addSelection(id);
-		execute(cmd);
 	}
 }
