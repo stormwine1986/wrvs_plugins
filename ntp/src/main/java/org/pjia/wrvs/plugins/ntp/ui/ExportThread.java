@@ -20,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ExportThread extends Thread {
 	
-	private static WRVSLocalClient localClient;
-	
 	private PluginContext context;
 	private Template template;
 
@@ -35,8 +33,8 @@ public class ExportThread extends Thread {
 		Workbook workbook = null;
 		FileOutputStream outputStream = null;
 		try {
-			localClient = new WRVSLocalClient(context);
-			loadTemplate();
+			WRVSLocalClient localClient = context.getLocalClient();
+			loadTemplate(localClient);
 			// 读取文档条目结构
 			PluginEventMgr.recordEvent(new Event("正在分析文档结构 ... "));
 			Segment segment = SegmentBuilder.create(localClient).build(context.getSelectedIds().get(0));
@@ -51,7 +49,6 @@ public class ExportThread extends Thread {
 			PluginEventMgr.recordEvent(new Event(e));
 		} finally {
 			PluginEventMgr.recordEvent(new Event("导出完成"));
-			if(localClient != null) { localClient.release(); }
 			if(workbook != null) {  
 				try {
 					workbook.close();
@@ -67,7 +64,7 @@ public class ExportThread extends Thread {
 		}
 	}
 
-	private void loadTemplate() throws IOException {
+	private void loadTemplate(WRVSLocalClient localClient) throws IOException {
 		byte[] resource = localClient.getResource("/plugins/templates/" + template.getFileName());
 		log.debug("从服务器加载模板文件大小(B): " + resource.length);
 		template.createTempFile(resource);

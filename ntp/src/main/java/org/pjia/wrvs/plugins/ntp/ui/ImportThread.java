@@ -22,6 +22,10 @@ import org.pjia.wrvs.plugins.ntp.model.Segment;
 import org.pjia.wrvs.plugins.ntp.model.Structure;
 import org.pjia.wrvs.plugins.ntp.utils.AssertUtil;
 
+import com.mks.api.Command;
+import com.mks.api.Option;
+import com.mks.api.response.APIException;
+
 /**
  * 导入线程
  * 
@@ -30,7 +34,6 @@ import org.pjia.wrvs.plugins.ntp.utils.AssertUtil;
  */
 public class ImportThread extends Thread {
 	
-	private WRVSLocalClient localClient;
 	private PluginContext context;
 	private File file;
 	
@@ -43,7 +46,7 @@ public class ImportThread extends Thread {
 	public void run() {
 		Workbook workbook = null;
     	try (InputStream is = new FileInputStream(file)) {
-    		localClient = new WRVSLocalClient(context);
+    		WRVSLocalClient localClient = new WRVSLocalClient(context);
     		workbook = new HSSFWorkbook(is);
     		Sheet sheet = workbook.getSheet(Model.SHEET_NAME_CHASSIS);
     		AssertUtil.checkSheetMustNotNull(Model.SHEET_NAME_CHASSIS, sheet);
@@ -54,14 +57,11 @@ public class ImportThread extends Thread {
     		Segment segment = SegmentBuilder.create(localClient).build(context.getSelectedIds().get(0));
     		dataSet.apply(segment);
     		SegmentUpdater.create(localClient).update(dataSet);
-    		localClient.viewDocument(context.getSelectedIds().get(0));
+    		viewDocument(localClient, context.getSelectedIds().get(0));
     	}catch (Exception e) {
     		PluginEventMgr.recordEvent(new Event(e));
 		} finally {
 			// 释放占用的资源
-			if(localClient != null) {
-				localClient.release();
-			}
 			if(workbook != null) {
 				try {
 					workbook.close();
@@ -69,5 +69,13 @@ public class ImportThread extends Thread {
 				}
 			}
 		}
+	}
+
+	private void viewDocument(WRVSLocalClient localClient, String id) throws APIException {
+		Command cmd = new Command("im", "viewsegment");
+		cmd.addOption(new Option("--gui"));
+		cmd.addOption(new Option("fields", "Section,Category,Message Name,Signal Name,Bit Number,State,ID"));
+		cmd.addSelection(id);
+		localClient.execute(cmd);
 	}
 }
