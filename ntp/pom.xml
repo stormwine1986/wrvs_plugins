@@ -6,16 +6,14 @@
   <parent>
     <groupId>org.pjia.wrvs.plugins</groupId>
     <artifactId>plugins-parent</artifactId>
-    <version>12.3.1.0</version>
+    <version>${wrvs.version}</version>
   </parent>
   
   <artifactId>ntp</artifactId>
 	
   <name>ntp</name>
-  <url>http://maven.apache.org</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+  <url></url>
+  
   <dependencies>
     <dependency>
         <groupId>org.apache.poi</groupId>
@@ -60,7 +58,6 @@
       <dependency>
         <groupId>org.pjia.wrvs.plugins</groupId>
         <artifactId>client</artifactId>
-        <version>12.3.1.0</version>
     </dependency>
   </dependencies>
   
@@ -80,9 +77,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <encoding>UTF-8</encoding> 
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding> 
                 </configuration>
             </plugin>
 
