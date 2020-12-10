@@ -107,7 +107,7 @@ public class SegmentUpdater {
 				command.addOption(new Option("parentID", message.getIssueId()));
 				setSingalInsertLocation(command, signal, message);
 			}
-			command.addOption(new Option("field", FieldValue.create("Category", "Functional Requirement").toString()));
+			command.addOption(new Option("field", FieldValue.create("Category", "Signal").toString()));
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
 			// Message 部分属性
 			command.addOption(new Option("field", FieldValue.create("Message Name", message.getName()).toString()));
@@ -192,7 +192,7 @@ public class SegmentUpdater {
 				setMessageInsertLocation(command, message);
 			}
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
-			command.addOption(new Option("field", FieldValue.create("Category", "Heading").toString()));
+			command.addOption(new Option("field", FieldValue.create("Category", "Message").toString()));
 			// message 部分
 			command.addOption(new Option("field", FieldValue.create("Message Name", message.getName()).toString()));
 			command.addOption(new Option("field", FieldValue.create("Message ID", message.getId()).toString()));
