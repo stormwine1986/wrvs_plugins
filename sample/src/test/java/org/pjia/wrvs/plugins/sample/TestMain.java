@@ -1,6 +1,8 @@
 package org.pjia.wrvs.plugins.sample;
 
 import java.util.Properties;
+
+import org.junit.Test;
 import org.pjia.wrvs.plugins.client.PluginContext;
 
 /**
@@ -11,7 +13,8 @@ import org.pjia.wrvs.plugins.client.PluginContext;
  */
 public class TestMain {
 	
-	public static void main(String[] args) {
+	@Test
+	public void runApp() {
 		Properties properties = new Properties();
 		properties.setProperty("MKSSI_HOST", "almprod.hq.faw.cn");
 		properties.setProperty("MKSSI_PORT", "7001");
@@ -20,7 +23,7 @@ public class TestMain {
 		properties.setProperty("MKSSI_ISSUE0", "30203");
 		try(PluginContext context = new PluginContext(properties);){
 			App app = new App();
-			app.run(args, context);			
+			app.run(new String[] {}, context);			
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
