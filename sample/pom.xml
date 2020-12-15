@@ -9,10 +9,8 @@
   </parent>
   <artifactId>sample</artifactId>
   <name>sample</name>
-  <url>http://maven.apache.org</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+  <url></url>
+  
   <dependencies>
     <dependency>
         <groupId>com.ptc.ilm</groupId>
