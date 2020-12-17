@@ -23,6 +23,8 @@ import lombok.Data;
 @Data
 public class Signal implements Identifiable {
 	
+	public static final String CATEGORY = "Signal";
+	
 	/**
 	 * 所属的 message
 	 * 

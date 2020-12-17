@@ -55,13 +55,11 @@ public class SegmentUpdater {
 		List<Message> messages = dataSet.getMessages();
 		Segment segment = dataSet.getSegment();
 		for(Message message: messages) {
-			// 返回 message heading item id
 			String mid = saveMessage(message, segment);
 			PluginEventMgr.recordEvent(new Event("正在写入", finished.addAndGet(1), totalAmount));
 			message.setIssueId(mid);
 			List<Signal> signals = message.getSignals();
 			for(Signal signal :signals) {
-				// 返回 Signal item id
 				String sid = saveSignal(signal, message);
 				PluginEventMgr.recordEvent(new Event("正在写入", finished.addAndGet(1), totalAmount));
 				signal.setIssueId(sid);
@@ -107,7 +105,7 @@ public class SegmentUpdater {
 				command.addOption(new Option("parentID", message.getIssueId()));
 				setSingalInsertLocation(command, signal, message);
 			}
-			command.addOption(new Option("field", FieldValue.create("Category", "Signal").toString()));
+			command.addOption(new Option("field", FieldValue.create("Category", Signal.CATEGORY).toString()));
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
 			// Message 部分属性
 			command.addOption(new Option("field", FieldValue.create("Message Name", message.getName()).toString()));
@@ -192,7 +190,7 @@ public class SegmentUpdater {
 				setMessageInsertLocation(command, message);
 			}
 			command.addOption(new Option("field", FieldValue.create("State", "Active").toString()));
-			command.addOption(new Option("field", FieldValue.create("Category", "Message").toString()));
+			command.addOption(new Option("field", FieldValue.create("Category", Message.CATEGORY).toString()));
 			// message 部分
 			command.addOption(new Option("field", FieldValue.create("Message Name", message.getName()).toString()));
 			command.addOption(new Option("field", FieldValue.create("Message ID", message.getId()).toString()));

@@ -40,7 +40,7 @@ public class DataSet {
 		List<Node> nodes = segment.getNodes();
 		for(Node node :nodes) {
 			String categroty = node.getCategroty();
-			if("Heading".equals(categroty)) {
+			if(Message.CATEGORY.equals(categroty)) {
 				Message message = getMessage(node);
 				// 找到对应的 message 意味着条目继续存在，取消 delete 标记，并将条目 id 关联到 message 对象。
 				if(message != null) {

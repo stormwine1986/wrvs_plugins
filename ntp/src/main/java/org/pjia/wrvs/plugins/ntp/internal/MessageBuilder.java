@@ -185,9 +185,9 @@ public class MessageBuilder {
 	 * @throws APIException 
 	 */
 	public DataSet build(Segment segment) {
-		// 选择所有非 heading 条目
+		// 选择所有信号条目
 		List<Node> nodes = segment.getNodes().stream()
-			.filter(node -> !"Heading".equals(node.getCategroty()))
+			.filter(node -> ! Message.CATEGORY.equals(node.getCategroty()))
 			.collect(Collectors.toList());
 		// event.updateProgress("正在读取内容", 0, nodes.size());
 		PluginEventMgr.recordEvent(new Event("正在读取内容", 0, nodes.size()));

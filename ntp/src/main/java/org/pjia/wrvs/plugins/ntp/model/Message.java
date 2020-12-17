@@ -16,6 +16,8 @@ import lombok.Data;
 @Data
 public class Message implements Identifiable {
 	
+	public static final String CATEGORY = "Message";
+	
 	private String issueId;
 	
 	/**
